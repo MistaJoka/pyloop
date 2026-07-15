@@ -1,0 +1,18 @@
+node_modules/
+dist/
+tsconfig.tsbuildinfo
+
+# The Python runtime, vendored by `npm run sync-pyodide`. ~14MB of wasm that
+# regenerates from the pinned version in package.json — no reason to carry it
+# in history.
+public/pyodide/
+
+# JupyterLab venv from before this was an app. Not part of the build.
+.venv/
+.ipynb_checkpoints/
+
+# tracer.py gets imported by local Python when probing it outside Pyodide.
+__pycache__/
+*.pyc
+
+.DS_Store

@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Film-bench palette: warm charcoal ground, paper ink, amber gate-lamp.
+   Heat = recency. A value that just changed is hot; it cools as it sits. */
+:root {
+  --ground: #17150f;
+  --panel: #211e17;
+  --panel-hi: #2b2720;
+  --rule: #3a352c;
+  --ink: #ede6d8;
+  --dim: #8c8375;
+  --amber: #ffb627;
+  --hot: #ff7a5c;
+  --good: #9bd17b;
+
+  --font-label: 'Avenir Next Condensed', 'Avenir Next', 'Helvetica Neue', sans-serif;
+  --font-body: Charter, 'Iowan Old Style', Georgia, serif;
+  --font-mono: 'SF Mono', ui-monospace, Menlo, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.label {
+  font-family: var(--font-label);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* A changed value flares, then cools over the following steps. */
+.heat-0 {
+  color: var(--hot);
+  text-shadow: 0 0 14px rgba(255, 122, 92, 0.55);
+}
+.heat-1 {
+  color: #ffa98f;
+}
+.heat-2 {
+  color: #d8b9a8;
+}
+.heat-3 {
+  color: var(--ink);
+}
+
+@keyframes flare {
+  from {
+    transform: translateX(-2px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.flare {
+  animation: flare 160ms ease-out;
+}
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
