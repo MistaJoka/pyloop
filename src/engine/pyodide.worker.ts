@@ -17,9 +17,10 @@ async function boot() {
   // Built via `new URL` rather than a string literal on purpose: Vite folds
   // literals and then refuses to transform a /public path at build time. This
   // has to stay an opaque runtime fetch.
-  const url = new URL('/pyodide/pyodide.mjs', self.location.origin).href
+  const base = import.meta.env.BASE_URL
+  const url = new URL(`${base}pyodide/pyodide.mjs`, self.location.origin).href
   const mod = await import(/* @vite-ignore */ url)
-  pyodide = await mod.loadPyodide({ indexURL: '/pyodide/' })
+  pyodide = await mod.loadPyodide({ indexURL: `${base}pyodide/` })
   pyodide.runPython(tracerSource)
   post({ kind: 'ready' })
 }

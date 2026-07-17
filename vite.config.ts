@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  // GitHub Pages serves project sites from /<repo>/, not /. Overridden to '/'
+  // for local dev via the dev server (base only affects `vite build`).
+  base: process.env.VITE_BASE ?? '/',
   plugins: [react()],
   server: {
     // 0.0.0.0 — reachable from the LAN and, since Tailscale is just another
