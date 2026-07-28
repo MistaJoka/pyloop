@@ -22,9 +22,13 @@ function Pips({ cleared, total }: { cleared: number; total: number }) {
 export function TopicMap({
   progress,
   onPick,
+  dueTodayCount,
+  onOpenReview,
 }: {
   progress: Progress
   onPick: (topicId: string, level: LevelId) => void
+  dueTodayCount: number
+  onOpenReview: () => void
 }) {
   const [openId, setOpenId] = useState<string | null>(topics[0]?.id ?? null)
 
@@ -37,6 +41,16 @@ export function TopicMap({
         One concept at a time. Watch it run, call the output, fix a broken one. About seven
         minutes a rung.
       </p>
+
+      {dueTodayCount > 0 && (
+        <button
+          onClick={onOpenReview}
+          className="label mt-4 text-[11px]"
+          style={{ color: 'var(--amber)' }}
+        >
+          {dueTodayCount} to review today →
+        </button>
+      )}
 
       <div className="mt-10 space-y-3">
         {topics.map((t) => {

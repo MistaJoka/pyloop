@@ -4,7 +4,8 @@ import { levelOf, topicById } from './content/topics'
 import type { Level, LevelId } from './content/types'
 import { TopicMap } from './ui/TopicMap'
 import { LoopShell } from './ui/LoopShell'
-import { completeLevel, load, save, type Progress } from './progress/store'
+import { Review } from './ui/Review'
+import { completeLevel, dueOn, load, recordReview, save, today, type Progress } from './progress/store'
 
 type Open = { topicId: string; level: LevelId }
 
@@ -15,6 +16,7 @@ export default function App() {
   const runtime = useMemo(() => new Runtime(setStatus), [])
   const [progress, setProgress] = useState<Progress>(() => load())
   const [open, setOpen] = useState<Open | null>(null)
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   useEffect(() => {
     save(progress)
@@ -36,10 +38,21 @@ export default function App() {
           onExit={() => setOpen(null)}
           onNextLevel={(next: Level) => setOpen({ topicId: topic.id, level: next.level })}
         />
+      ) : reviewOpen ? (
+        <Review
+          progress={progress}
+          runtime={runtime}
+          onExit={() => setReviewOpen(false)}
+          onRecord={(topicId, lvl, correct) =>
+            setProgress((p) => recordReview(p, topicId, lvl, correct))
+          }
+        />
       ) : (
         <TopicMap
           progress={progress}
           onPick={(topicId, lvl) => setOpen({ topicId, level: lvl })}
+          dueTodayCount={dueOn(progress, today()).length}
+          onOpenReview={() => setReviewOpen(true)}
         />
       )}
 
