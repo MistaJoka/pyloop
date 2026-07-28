@@ -81,6 +81,20 @@ for (const topic of topics) {
     if (!good.passed) bad(`fix: the SHIPPED solution fails its own check — "${JSON.stringify(good.error)}"`)
     else ok('fix: shipped solution accepted')
 
+    // 4b. BUILD (levels 4 and 5 only): the schema requires it, and its check
+    //     must be reachable. Proven using THIS level's own fix.solution as
+    //     the witness — build.check is meant to be the same correctness bar
+    //     as fix.check, so whatever solves Fix must also solve Build.
+    if (lv.level >= 4) {
+      if (!lv.build) bad('build: missing — required at levels 4 and 5')
+      else if (!lv.build.task?.trim()) bad('build: task is empty')
+      else {
+        const w = JSON.parse(runAsserts(lv.fix.solution, lv.build.check.code, lv.build.stdin ?? lv.fix.stdin ?? ''))
+        if (!w.passed) bad(`build: check not satisfiable — this level's fix.solution fails it: "${JSON.stringify(w.error)}"`)
+        else ok('build: check reachable (verified via fix.solution)')
+      }
+    }
+
     // 5. Stretch code, if any, must run
     if (lv.stretch?.code) {
       const st = JSON.parse(runPlain(lv.stretch.code, lv.watch.stdin ?? ''))
