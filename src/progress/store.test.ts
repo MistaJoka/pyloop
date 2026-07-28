@@ -175,6 +175,42 @@ describe('review scheduling', () => {
     expect(p.topics['for-loops'].levels[1]?.nextReviewDue).toBe('2026-07-17')
   })
 
+  it('recordReview crosses a month boundary correctly (interval 7 -> 30)', () => {
+    at('2026-07-15T20:00:00')
+    let p = completeLevel(fresh(), 'for-loops', 1, { predictCorrect: true, assisted: false })
+    // Force the level to a 7-day interval, as if it had already advanced
+    // 1 -> 3 -> 7 through prior reviews.
+    p = {
+      ...p,
+      topics: {
+        ...p.topics,
+        'for-loops': {
+          levels: { ...p.topics['for-loops'].levels, 1: { ...p.topics['for-loops'].levels[1]!, reviewIntervalDays: 7 } },
+        },
+      },
+    }
+    // nextInterval(7, true) advances to 30 (the schedule's last rung). July
+    // has 31 days, so 2026-07-15 + 30 days lands on 2026-08-14, crossing the
+    // month boundary that a naive day-of-month increment would get wrong.
+    p = recordReview(p, 'for-loops', 1, true)
+    expect(p.topics['for-loops'].levels[1]?.reviewIntervalDays).toBe(30)
+    expect(p.topics['for-loops'].levels[1]?.nextReviewDue).toBe('2026-08-14')
+  })
+
+  it('dueOn excludes a level with no nextReviewDue at all (pre-Review save)', () => {
+    const p: Progress = {
+      version: 2,
+      topics: {
+        'for-loops': {
+          levels: {
+            1: { completed: true, predictCorrect: true, assisted: false, attempts: 1, lastSeen: '2026-07-01' },
+          },
+        },
+      },
+    }
+    expect(dueOn(p, '2099-01-01')).toEqual([])
+  })
+
   it('dueOn finds items due today or earlier, and excludes future ones', () => {
     at('2026-07-15T20:00:00')
     let p = completeLevel(fresh(), 'for-loops', 1, { predictCorrect: true, assisted: false }) // due 07-16

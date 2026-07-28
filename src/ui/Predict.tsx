@@ -5,9 +5,11 @@ import { Markdown } from './Markdown'
 export function Predict({
   level,
   onDone,
+  nextLabel = 'Now fix one →',
 }: {
   level: Level
   onDone: (correct: boolean) => void
+  nextLabel?: string
 }) {
   const [picked, setPicked] = useState<number | null>(null)
   const p = level.predict
@@ -73,7 +75,7 @@ export function Predict({
             className="label mt-6 rounded px-5 py-2.5 text-[11px]"
             style={{ background: 'var(--amber)', color: 'var(--ground)' }}
           >
-            Now fix one →
+            {nextLabel}
           </button>
         </div>
       )}

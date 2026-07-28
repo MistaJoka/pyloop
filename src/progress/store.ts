@@ -83,7 +83,7 @@ export function save(p: Progress) {
  *  stamped with tomorrow's date. This burned the old streak logic badly; it now
  *  only feeds `lastSeen`, but a wrong date there would quietly mislead anything
  *  that later schedules review. Local in, local out. */
-const localDay = (d: Date) =>
+export const localDay = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 export const today = () => localDay(new Date())

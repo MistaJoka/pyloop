@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Progress } from '../progress/store'
-import { today } from '../progress/store'
+import { dueOn, localDay, today } from '../progress/store'
 
 function monthGrid(year: number, month: number): (string | null)[] {
   const first = new Date(year, month, 1)
@@ -8,8 +8,7 @@ function monthGrid(year: number, month: number): (string | null)[] {
   const startPad = first.getDay() // 0 = Sunday
   const days: (string | null)[] = Array(startPad).fill(null)
   for (let d = 1; d <= daysInMonth; d++) {
-    const dt = new Date(year, month, d)
-    days.push(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`)
+    days.push(localDay(new Date(year, month, d)))
   }
   return days
 }
@@ -54,7 +53,11 @@ export function ReviewCalendar({
       <div className="grid grid-cols-7 gap-1">
         {days.map((day, i) => {
           if (!day) return <div key={i} />
-          const count = countOn(progress, day)
+          // Today's cell must reflect "due or overdue" (like the map's badge
+          // and the actual queue), not an exact-date match — otherwise an
+          // overdue item shows 0 on today's cell and is only clickable on the
+          // day it was originally due, possibly in a different month.
+          const count = day === todayStr ? dueOn(progress, day).length : countOn(progress, day)
           const isPast = day <= todayStr
           const clickable = count > 0 && isPast
           return (

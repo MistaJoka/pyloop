@@ -175,6 +175,7 @@ export function LoopShell({
       {stage === 'predict' && (
         <Predict
           level={level}
+          nextLabel={level.level >= 4 ? 'Now build one →' : 'Now fix one →'}
           onDone={(correct) => {
             setPredictCorrect(correct)
             setStage(fourthStage(level.level))

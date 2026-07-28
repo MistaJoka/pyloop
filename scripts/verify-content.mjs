@@ -89,7 +89,7 @@ for (const topic of topics) {
       if (!lv.build) bad('build: missing — required at levels 4 and 5')
       else if (!lv.build.task?.trim()) bad('build: task is empty')
       else {
-        const w = JSON.parse(runAsserts(lv.fix.solution, lv.build.check.code, lv.build.stdin ?? lv.fix.stdin ?? ''))
+        const w = JSON.parse(runAsserts(lv.fix.solution, lv.build.check.code, lv.build.stdin ?? ''))
         if (!w.passed) bad(`build: check not satisfiable — this level's fix.solution fails it: "${JSON.stringify(w.error)}"`)
         else ok('build: check reachable (verified via fix.solution)')
       }

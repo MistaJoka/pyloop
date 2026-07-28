@@ -38,8 +38,8 @@ export function TopicMap({
         PyLoop
       </h1>
       <p className="mt-3 max-w-lg text-lg" style={{ color: 'var(--dim)' }}>
-        One concept at a time. Watch it run, call the output, fix a broken one. About seven
-        minutes a rung.
+        One concept at a time. Watch it run, call the output, fix a broken one or build one
+        from scratch. About seven minutes a rung.
       </p>
 
       {dueTodayCount > 0 && (
