@@ -99,6 +99,20 @@ assert __stdout__.strip() == "[20, 40, 60]", f"It should print [20, 40, 60], but
 doubled = [p * 2 for p in prices]
 print(doubled)`,
   },
+  build: {
+    task: `Given \`prices = [10, 20, 30]\`, write code from scratch that computes
+\`doubled\` as each price times 2 — using a single list comprehension, no
+\`for\` statement — and prints it. It should print \`[20, 40, 60]\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+assert doubled == [20, 40, 60], f"doubled came out as {doubled}, expected [20, 40, 60]."
+assert any(isinstance(n, ast.ListComp) for n in ast.walk(tree)), "Right answer, but it's still a loop. Use a list comprehension: [ ... for p in prices]."
+assert not any(isinstance(n, ast.For) for n in ast.walk(tree)), "The comprehension is there, but the old for loop is still hanging around. Delete it."
+assert __stdout__.strip() == "[20, 40, 60]", f"It should print [20, 40, 60], but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'And then the loop disappears completely',
     body: `You've now written the same idea three ways:

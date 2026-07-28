@@ -92,6 +92,16 @@ for cart in carts:
         total = total + item
 print(total)`,
   },
+  build: {
+    task: `Each cart is a list of item prices — \`carts = [[5, 5], [10], [2, 3, 4]]\`.
+Write code from scratch, with nested \`for\` loops, that sums every price
+across every cart into \`total\` and prints it. It should print \`29\`.`,
+    check: {
+      kind: 'asserts',
+      code: `assert total == 29, f"total came out as {total}, expected 29 (5+5+10+2+3+4)."
+assert __stdout__.strip() == "29", f"It should print 29, but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'Flatten, then sum',
     body: `Python can nest the loops inside a comprehension too:
