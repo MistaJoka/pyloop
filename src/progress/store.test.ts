@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { completeLevel, load, needsAnotherLook, nextInterval, save, type Progress } from './store'
+import { completeLevel, load, needsAnotherLook, nextInterval, save, type Progress, recordReview, dueOn, today } from './store'
 
 /** Drive the clock to a specific LOCAL wall-clock moment. */
 function at(local: string) {
@@ -140,5 +140,52 @@ describe('nextInterval', () => {
     expect(nextInterval(7, false)).toBe(1)
     expect(nextInterval(30, false)).toBe(1)
     expect(nextInterval(null, false)).toBe(1)
+  })
+})
+
+describe('review scheduling', () => {
+  it('seeds a 1-day review on first clear, and leaves it alone on a redo', () => {
+    at('2026-07-15T20:00:00')
+    let p = completeLevel(fresh(), 'for-loops', 1, { predictCorrect: true, assisted: false })
+    expect(p.topics['for-loops'].levels[1]?.nextReviewDue).toBe('2026-07-16')
+    expect(p.topics['for-loops'].levels[1]?.reviewIntervalDays).toBe(1)
+
+    // Redoing the level (not via Review) shouldn't reset an existing schedule.
+    p = { ...p, topics: { ...p.topics, 'for-loops': { levels: { ...p.topics['for-loops'].levels, 1: { ...p.topics['for-loops'].levels[1]!, nextReviewDue: '2026-08-01', reviewIntervalDays: 7 } } } } }
+    p = completeLevel(p, 'for-loops', 1, { predictCorrect: true, assisted: false })
+    expect(p.topics['for-loops'].levels[1]?.nextReviewDue).toBe('2026-08-01')
+    expect(p.topics['for-loops'].levels[1]?.reviewIntervalDays).toBe(7)
+  })
+
+  it('recordReview advances the schedule on a correct answer', () => {
+    at('2026-07-15T20:00:00')
+    let p = completeLevel(fresh(), 'for-loops', 1, { predictCorrect: true, assisted: false })
+    at('2026-07-16T20:00:00')
+    p = recordReview(p, 'for-loops', 1, true)
+    expect(p.topics['for-loops'].levels[1]?.reviewIntervalDays).toBe(3)
+    expect(p.topics['for-loops'].levels[1]?.nextReviewDue).toBe('2026-07-19')
+  })
+
+  it('recordReview resets to 1 day on a wrong answer', () => {
+    at('2026-07-15T20:00:00')
+    let p = completeLevel(fresh(), 'for-loops', 1, { predictCorrect: true, assisted: false })
+    at('2026-07-16T20:00:00')
+    p = recordReview(p, 'for-loops', 1, false)
+    expect(p.topics['for-loops'].levels[1]?.reviewIntervalDays).toBe(1)
+    expect(p.topics['for-loops'].levels[1]?.nextReviewDue).toBe('2026-07-17')
+  })
+
+  it('dueOn finds items due today or earlier, and excludes future ones', () => {
+    at('2026-07-15T20:00:00')
+    let p = completeLevel(fresh(), 'for-loops', 1, { predictCorrect: true, assisted: false }) // due 07-16
+    p = completeLevel(p, 'for-loops', 2, { predictCorrect: true, assisted: false }) // due 07-16
+    expect(dueOn(p, '2026-07-16')).toHaveLength(2)
+    expect(dueOn(p, '2026-07-15')).toHaveLength(0) // not due yet
+    expect(dueOn(p, '2026-07-20')).toHaveLength(2) // overdue items still show
+  })
+
+  it('today() reports the local calendar day', () => {
+    at('2026-07-15T20:00:00')
+    expect(today()).toBe('2026-07-15')
   })
 })

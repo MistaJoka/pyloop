@@ -14,12 +14,21 @@ export type LevelProgress = {
   /** Times cleared. */
   attempts: number
   lastSeen: string
+  /** Next local calendar day this level's predict should be re-asked.
+   *  Optional so pre-existing saves (from before Review shipped) load fine
+   *  with it simply absent — absent is read the same as "not yet scheduled". */
+  nextReviewDue?: string | null
+  /** The spacing interval that produced nextReviewDue, so the NEXT review
+   *  can compute where to go from here. */
+  reviewIntervalDays?: number | null
 }
 
 export type TopicProgress = {
   /** Sparse: only levels that have been touched appear. */
   levels: Partial<Record<LevelId, LevelProgress>>
 }
+
+export type DueItem = { topicId: string; level: LevelId }
 
 /** Records where he's been, not how well he's performing. There is deliberately
  *  no streak, score, or reward here — completion state exists so the map can
@@ -77,7 +86,15 @@ export function save(p: Progress) {
 const localDay = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-const today = () => localDay(new Date())
+export const today = () => localDay(new Date())
+
+/** Adds `n` local calendar days to a `localDay()`-formatted string. */
+function addDays(day: string, n: number): string {
+  const [y, m, d] = day.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + n)
+  return localDay(dt)
+}
 
 export function completeLevel(
   p: Progress,
@@ -87,6 +104,7 @@ export function completeLevel(
 ): Progress {
   const topic = p.topics[topicId] ?? { levels: {} }
   const prev = topic.levels[level]
+  const firstClear = !prev?.completed
   return {
     ...p,
     topics: {
@@ -103,6 +121,8 @@ export function completeLevel(
             assisted: outcome.assisted,
             attempts: (prev?.attempts ?? 0) + 1,
             lastSeen: today(),
+            nextReviewDue: firstClear ? addDays(today(), 1) : (prev?.nextReviewDue ?? addDays(today(), 1)),
+            reviewIntervalDays: firstClear ? 1 : (prev?.reviewIntervalDays ?? 1),
           },
         },
       },
@@ -141,4 +161,52 @@ export function nextInterval(current: number | null, correct: boolean): number {
   const i = REVIEW_SCHEDULE.indexOf(current)
   if (i === -1 || i === REVIEW_SCHEDULE.length - 1) return REVIEW_SCHEDULE[REVIEW_SCHEDULE.length - 1]
   return REVIEW_SCHEDULE[i + 1]
+}
+
+/** Answering one scheduled review: advances (or resets) the spacing interval
+ *  and reschedules. Does not touch completed/predictCorrect/assisted — those
+ *  describe the LOOP clear, not a later review answer. */
+export function recordReview(
+  p: Progress,
+  topicId: string,
+  level: LevelId,
+  correct: boolean,
+): Progress {
+  const topic = p.topics[topicId] ?? { levels: {} }
+  const prev = topic.levels[level]
+  const interval = nextInterval(prev?.reviewIntervalDays ?? null, correct)
+  return {
+    ...p,
+    topics: {
+      ...p.topics,
+      [topicId]: {
+        levels: {
+          ...topic.levels,
+          [level]: {
+            completed: prev?.completed ?? true,
+            predictCorrect: prev?.predictCorrect ?? correct,
+            assisted: prev?.assisted ?? false,
+            attempts: prev?.attempts ?? 1,
+            lastSeen: today(),
+            nextReviewDue: addDays(today(), interval),
+            reviewIntervalDays: interval,
+          },
+        },
+      },
+    },
+  }
+}
+
+/** Every level scheduled on or before `day` — "due or overdue", so a
+ *  skipped day never silently drops an item. */
+export function dueOn(p: Progress, day: string): DueItem[] {
+  const items: DueItem[] = []
+  for (const [topicId, tp] of Object.entries(p.topics)) {
+    for (const [levelStr, lp] of Object.entries(tp.levels)) {
+      if (lp?.nextReviewDue && lp.nextReviewDue <= day) {
+        items.push({ topicId, level: Number(levelStr) as LevelId })
+      }
+    }
+  }
+  return items
 }
