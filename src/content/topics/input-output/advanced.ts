@@ -96,6 +96,22 @@ assert __stdout__.strip() == "Age? is it a number? True", f"Expected 'Age? is it
     solution: `raw = input("Age? ")
 print("is it a number?", raw.strip().isdigit())`,
   },
+  build: {
+    task: `Write code from scratch that reads typed text with \`input("Age? ")\`, then
+prints \`"is it a number?"\` followed by whether that text — after stripping
+whitespace — is all digits. Someone types \` 25\` (a stray leading space, then
+their age). It should print \`Age? is it a number? True\`.`,
+    stdin: ' 25\n',
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+assert any(isinstance(n, ast.Call) and getattr(n.func, 'id', '') == 'input' for n in ast.walk(tree)), "Is the line still being read from the person? The typed text is what's being tested."
+assert not any(isinstance(n, ast.Constant) and n.value is True for n in ast.walk(tree)), "Printing True isn't checking anything — it's just claiming. What question about raw should come out True?"
+assert 'isdigit' in {getattr(n, 'attr', '') for n in ast.walk(tree)}, "The question 'is every character a digit?' is still the right question to ask. What is it being asked about?"
+assert __stdout__.strip() == "Age? is it a number? True", f"Expected 'Age? is it a number? True' but it was {__stdout__.strip()!r}. The typed text isn't '25' — print repr(raw) and look at what's actually in there."`,
+    },
+  },
   stretch: {
     title: 'isdigit() is narrower than you think',
     body: `\`.isdigit()\` answers "is every character a digit", which is not the same as

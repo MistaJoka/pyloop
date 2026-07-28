@@ -120,6 +120,21 @@ assert __stdout__.strip() == "[[9, 0, 0], [0, 0, 0]]", f"It should print [[9, 0,
 grid[0][0] = 9
 print(grid)`,
   },
+  build: {
+    task: `Write code from scratch that builds a 2×3 grid of zeros in \`grid\`, using
+two separately-built rows (not one row repeated with \`* 2\`), then sets the
+top-left value to \`9\` and prints \`grid\`. It should print
+\`[[9, 0, 0], [0, 0, 0]]\` — only the top row changed.`,
+    check: {
+      kind: 'asserts',
+      code: `assert isinstance(grid, list) and len(grid) == 2, f"grid should still be 2 rows, but it's {grid!r}."
+assert all(isinstance(r, list) and len(r) == 3 for r in grid), f"Each row should still be 3 items wide, but grid is {grid!r}."
+assert grid[0] == [9, 0, 0], f"Row 0 came out as {grid[0]!r}, expected [9, 0, 0] — line 2 should still do its job."
+assert grid[1] == [0, 0, 0], f"Row 1 came out as {grid[1]!r}. Nothing in this code ever assigns to grid[1] — so how did the 9 arrive? What did * 2 actually repeat: the list, or a reference to it?"
+assert grid[0] is not grid[1], "The two rows are still the same list object, so a write to one is a write to both. What would make row 1 a genuinely separate list?"
+assert __stdout__.strip() == "[[9, 0, 0], [0, 0, 0]]", f"It should print [[9, 0, 0], [0, 0, 0]], but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: '+= and + are not the same operator',
     body: `You've been told \`a += x\` is shorthand for \`a = a + x\`. For lists, that's

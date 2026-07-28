@@ -110,6 +110,24 @@ assert __stdout__.strip() == "2 17", f"It should print 2 17, but it printed {__s
 minutes, seconds = divmod(total, 60)
 print(minutes, seconds)`,
   },
+  build: {
+    task: `Given \`total = 137\` (seconds), write code from scratch that computes
+\`minutes\` as the whole number of minutes and \`seconds\` as the remaining
+seconds, then prints them. 137 seconds is 2 minutes and 17 seconds — it
+should print \`2 17\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+assert 'total' in names, "Is total still doing the work? The answer should come out of the arithmetic, not be typed in."
+assert total == 137, f"total is {total!r} now. 137 was never the problem."
+assert seconds == 17, f"seconds came out as {seconds!r}, expected 17. % was already doing its half of the job correctly — it didn't need touching."
+assert minutes == 2, f"minutes came out as {minutes!r}. 137 seconds is 2 whole minutes and a bit; which division keeps only the whole part and drops the bit?"
+assert isinstance(minutes, int), f"minutes is a {type(minutes).__name__} holding {minutes!r}. Right value, wrong type — 2.0 is still a float. Is there a division that hands back an int directly, without rounding afterwards?"
+assert __stdout__.strip() == "2 17", f"It should print 2 17, but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'One symbol, two meanings',
     body: `Run this and watch \`+\` concatenate:

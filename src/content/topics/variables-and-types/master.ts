@@ -112,6 +112,23 @@ assert __stdout__.strip() == "True", f"It should print True, but it printed {__s
 b = 0.3
 print(abs(a - b) < 1e-9)`,
   },
+  build: {
+    task: `Write code from scratch: set \`a = 0.1 + 0.2\` and \`b = 0.3\`, then print
+whether they're close enough to count as equal — comparing the size of the
+gap between them to a tiny tolerance like \`1e-9\`, not testing them for
+bit-identical equality. It should print \`True\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+assert a == 0.1 + 0.2, f"a is {a!r} now. The arithmetic isn't the bug — 0.1 + 0.2 genuinely is what it is, and rounding it away hides the thing you're meant to be handling. What could change instead is the question you ask about a and b?"
+assert b == 0.3, f"b is {b!r} now. The values aren't the problem; leave them as they were."
+names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+assert 'a' in names and 'b' in names, "Are a and b both still part of what gets printed, or did the answer get written in by hand?"
+assert not any(isinstance(n, ast.Constant) and n.value is True for n in ast.walk(tree)), "Printing True isn't asking a question — it's just asserting one. What comparison between a and b should come out True?"
+assert __stdout__.strip() == "True", f"It should print True, but it printed {__stdout__.strip()!r}. What does == mean for two floats that are close but not bit-identical?"`,
+    },
+  },
   stretch: {
     title: 'The whole ladder, in one line of numpy',
     body: `Two tidier ways to say what you just wrote:

@@ -127,6 +127,25 @@ assert __stdout__.strip() == "3 a", f"It should still print 3 a; it printed {__s
 b = Bag(["a", "b", "c"])
 print(len(b), b[0])`,
   },
+  build: {
+    task: `Write code from scratch: define a class \`Bag\` with
+\`__init__(self, stuff)\` storing \`stuff\`, and the dunder methods
+\`__len__\` and \`__getitem__\` (not custom names like \`size\`/\`at\`) so that
+\`len(b)\` and \`b[i]\` work directly on it. Build
+\`b = Bag(["a", "b", "c"])\` and print \`len(b)\` and \`b[0]\` together. It
+should print \`3 a\`.`,
+    check: {
+      kind: 'asserts',
+      code: `assert 'Bag' in dir(), "There's no class called Bag anymore — keep it."
+assert hasattr(Bag, "__len__"), "len() never looks for a method called size. It calls one specific dunder on your object, every time, on anything — which one?"
+assert hasattr(Bag, "__getitem__"), "Square brackets are a method call too: b[0] is really b.__getitem__(0). That method doesn't exist on Bag yet."
+bag = Bag(["x", "y"])
+assert len(bag) == 2, f"len(Bag(['x','y'])) gave {len(bag)}, not 2. Is __len__ returning the length of the list inside?"
+assert bag[1] == "y", f"bag[1] gave {bag[1]!r}, not 'y'. Is __getitem__ indexing into self.stuff with the i it was handed?"
+assert list(bag) == ["x", "y"], f"Looping over the bag gave {list(bag)}. __getitem__ with plain integer indexes is all a for-loop needs — it counts up until IndexError, so it should just work."
+assert __stdout__.strip() == "3 a", f"It should still print 3 a; it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'One more method, and `sorted()` works too',
     body: `The pattern doesn't stop. \`sorted()\` doesn't know how to compare your objects — it

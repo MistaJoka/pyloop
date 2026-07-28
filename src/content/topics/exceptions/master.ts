@@ -150,6 +150,26 @@ try:
 except ValueError as e:
     print("rejected:", e)`,
   },
+  build: {
+    task: `Write code from scratch: define \`to_rate(text)\` that converts \`text\` to a
+\`float\` and, if the result is negative, \`raise\`s a \`ValueError\` whose
+message states what was expected and what actually arrived (include the
+original \`text\`). A good rate should just come back unchanged. Then call
+\`to_rate("-1")\` inside a \`try\`/\`except ValueError as e:\` that prints
+\`"rejected:", e\`. It should print something starting with \`rejected:\`
+that mentions \`-1\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+assert any(isinstance(n, ast.Raise) for n in ast.walk(tree)), "Nothing raises yet. A negative rate is a bug, and to_rate is the last place that can still recognise it as one — say so, with raise ValueError(...)."
+assert to_rate("0.5") == 0.5, "A good rate has to still come straight back: 0.5 in, 0.5 out. Only the negative ones should raise — don't guard the whole function."
+_out = __stdout__.strip()
+assert _out.startswith("rejected:"), f"The except branch never fired, so to_rate('-1') still returned quietly. It printed {_out!r}."
+assert len(_out) > len("rejected:") + 5, "It raises, but the message is empty. What would you want to read at 2am, six months from now, with no memory of this code?"
+assert "-1" in _out, "The message never says what actually turned up. 'rate must be >= 0, got -1' tells you the whole story; 'invalid rate' makes you go and find the data yourself."`,
+    },
+  },
   stretch: {
     title: 'Let the count itself fail fast',
     body: `Level 4 said: count the failures. Level 5 finishes the thought — **give the

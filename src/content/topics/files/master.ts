@@ -119,6 +119,18 @@ with open("nums.txt") as f:
         total = total + int(line)
 print(count, total)`,
   },
+  build: {
+    task: `Write code from scratch that creates a file \`nums.txt\` containing the
+lines \`10\`, \`20\`, \`30\` (one number per line), then reads it in a
+**single pass** to compute \`count\` (the number of lines) and \`total\`
+(the sum of the numbers), and prints them. It should print \`3 60\`.`,
+    check: {
+      kind: 'asserts',
+      code: `assert count == 3, f"count came out as {count}, expected 3 — one per line."
+assert total == 60, f"total came out as {total}, expected 60 (10+20+30). If it's 0 the loop body never ran once: by the time the 'for' started, where in the file was the read position?"
+assert __stdout__.strip() == "3 60", f"It should print '3 60', but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'And then it becomes one line',
     body: `Here's the whole topic, collapsed:

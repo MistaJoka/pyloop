@@ -111,6 +111,20 @@ with open("scores.csv") as f:
         rows.append({"name": parts[0], "score": int(parts[1])})
 print(rows)`,
   },
+  build: {
+    task: `Write code from scratch that creates a file \`scores.csv\` containing the
+lines \`ana,90\` and \`bo,85\`, then reads it back into a list of dicts
+called \`rows\` — each with a \`"name"\` string and a \`"score"\` as a real
+\`int\`, not text — and prints \`rows\`. It should print
+\`[{'name': 'ana', 'score': 90}, {'name': 'bo', 'score': 85}]\`.`,
+    check: {
+      kind: 'asserts',
+      code: `assert isinstance(rows, list), f"rows should be a list of dicts, but it's a {type(rows).__name__}."
+assert len(rows) == 2, f"rows has {len(rows)} item(s), expected 2 — one dict per line of the file."
+assert rows == [{"name": "ana", "score": 90}, {"name": "bo", "score": 85}], f"rows came out as {rows!r}. Look hard at the score values: what type are they, and is there a character stuck on the end that came from the file?"
+assert __stdout__.strip() == "[{'name': 'ana', 'score': 90}, {'name': 'bo', 'score': 85}]", f"It should print the list of dicts, but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'The stdlib already did this',
     body: `Python ships a \`csv\` module, and \`DictReader\` does the whole loop — reads

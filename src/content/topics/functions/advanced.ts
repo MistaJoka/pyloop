@@ -131,6 +131,24 @@ labels = ["a"]
 add_tag(labels, "b")
 print(labels)`,
   },
+  build: {
+    task: `Write code from scratch: define \`add_tag(tags, tag)\` so it adds \`tag\` to
+the \`tags\` list it was handed by mutating that list in place (not
+rebinding \`tags\` to a new list). Then, given \`labels = ["a"]\`, call
+\`add_tag(labels, "b")\` and print \`labels\`. It should print
+\`['a', 'b']\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+fn = next((n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == 'add_tag'), None)
+assert fn is not None, "add_tag is gone. The fix goes inside it — keep it."
+bare = [n for n in ast.walk(tree) if isinstance(n, ast.Expr) and isinstance(n.value, ast.Call) and getattr(n.value.func, 'id', None) == 'add_tag']
+assert bare, "The call to add_tag should still stand alone on its own line. Reassigning the result (labels = add_tag(...)) is a fine design, but it dodges the question this level asks: can a function change a list it was handed, without handing anything back?"
+assert labels == ['a', 'b'], f"labels is {labels}. 'tags = tags + [tag]' builds a NEW list and points the local name at it — at what moment did the caller's list ever change?"
+assert __stdout__.strip() == "['a', 'b']", f"Expected ['a', 'b'], got {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'global, and why the answer is almost always no',
     body: `There *is* a way to reach out and rebind a caller's variable:

@@ -105,6 +105,15 @@ for f in fields:
     clean.append(f.strip())
 print("|".join(clean))`,
   },
+  build: {
+    task: `Given \`row = " ana , 90 , math "\`, write code from scratch that splits it
+on commas, strips the whitespace off each field, and joins the clean
+fields with \`|\`. It should print \`ana|90|math\`.`,
+    check: {
+      kind: 'asserts',
+      code: `assert __stdout__.strip() == "ana|90|math", f"It printed {__stdout__.strip()!r}. Splitting on ',' cuts at the commas and nothing else — so the spaces around each field went into the field. What has to happen to each one before you join?"`,
+    },
+  },
   stretch: {
     title: 'split() with nothing in it is a different function',
     body: `\`.split(" ")\` and \`.split()\` look like the same call with a default. They are

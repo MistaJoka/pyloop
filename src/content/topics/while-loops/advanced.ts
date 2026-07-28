@@ -92,6 +92,18 @@ assert lines == ["a", "b", "c"], f"It printed {lines}, expected ['a', 'b', 'c'].
 while queue:
     print(queue.pop(0))`,
   },
+  build: {
+    task: `Given \`queue = ["a", "b", "c"]\`, write code from scratch with a \`while\`
+loop that keeps popping and printing the first job in \`queue\` until the
+queue is completely empty. It should print \`a\`, \`b\`, \`c\`, each on its own
+line.`,
+    check: {
+      kind: 'asserts',
+      code: `assert queue == [], f"The queue still has {queue} in it. Say the test out loud: 'keep going while there is more than one job left.' When should this loop actually stop — at one left, or at none?"
+lines = __stdout__.strip().split("\\n")
+assert lines == ["a", "b", "c"], f"It printed {lines}, expected ['a', 'b', 'c']."`,
+    },
+  },
   stretch: {
     title: 'The loop and a half',
     body: `Sometimes you can't test at the top, because the thing you'd test doesn't

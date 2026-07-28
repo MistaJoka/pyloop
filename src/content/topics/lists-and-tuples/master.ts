@@ -114,6 +114,21 @@ for n in [1, 2, 3]:
 xs.reverse()
 print(xs)`,
   },
+  build: {
+    task: `Write code from scratch that builds the list \`[3, 2, 1]\` out of the
+numbers \`[1, 2, 3]\`, using only \`append\` — no \`insert\` anywhere. Build the
+list in the cheap order first, then fix the order afterwards, and print
+the result. It should print \`[3, 2, 1]\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+assert not any(isinstance(n, ast.Attribute) and n.attr == "insert" for n in ast.walk(tree)), "The output is right, but insert is still in there — and every insert(0, n) shifts the whole list up a slot. That shifting is the cost we're trying to delete."
+assert any(isinstance(n, ast.Attribute) and n.attr == "append" for n in ast.walk(tree)), "No append anywhere. Build the list up at the cheap end first, and worry about the order afterwards."
+assert xs == [3, 2, 1], f"xs came out as {xs!r}, expected [3, 2, 1]."
+assert __stdout__.strip() == "[3, 2, 1]", f"It should print [3, 2, 1], but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'The picture: a box of pointers, and the block of bytes that replaces it',
     body: `Here's what a list actually is in memory. \`[1, "two", [3], None]\` is a

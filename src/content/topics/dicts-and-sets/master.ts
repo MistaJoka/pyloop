@@ -112,6 +112,21 @@ assert __stdout__.strip() == "3", f"It should print 3 — three distinct ids. It
 unique = set(ids)
 print(len(unique))`,
   },
+  build: {
+    task: `Given \`ids = ["a", "b", "a", "c", "b"]\`, write code from scratch that
+computes the distinct ids into a set called \`unique\` — no loop, no \`if\`,
+no \`.append\` — and prints the count. It should print \`3\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+assert 'unique' in dir(), "Keep a name called unique holding the distinct ids."
+assert not any(isinstance(n, ast.For) for n in ast.walk(tree)), "The loop is still here. A set can't hold a duplicate in the first place — so what does set(ids) leave you with, and what work is the loop still doing that you no longer need?"
+assert isinstance(unique, set), f"unique is a {type(unique).__name__}. Answering 'have I seen this?' from a list means scanning it — which type answers that in one hop, without looking at the other items at all?"
+assert unique == {"a", "b", "c"}, f"unique is {unique!r}, but the distinct ids are a, b and c."
+assert __stdout__.strip() == "3", f"It should print 3 — three distinct ids. It printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'The number that makes it real',
     body: `Same question, two containers, 100,000 items:

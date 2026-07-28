@@ -106,6 +106,22 @@ while abs(guess * guess - target) > 0.01:
     guess = (guess + target / guess) / 2
 print(round(guess, 3))`,
   },
+  build: {
+    task: `Given \`guess = 1.0\` and \`target = 9.0\`, write code from scratch with a
+\`while\` loop that keeps refining \`guess\` using
+\`guess = (guess + target / guess) / 2\`, continuing while \`guess\` is still
+more than \`0.01\` away from the true square root (test:
+\`abs(guess * guess - target) > 0.01\`), then prints \`round(guess, 3)\`. It
+should print \`3.0\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+assert any(isinstance(n, ast.While) for n in ast.walk(tree)), "The while loop is gone. The job is to let the loop converge on the answer, not to hand it the answer."
+assert round(guess, 3) == 3.0, f"guess ended at {guess}. It should converge to 3.0. Does the body run even once — is the test true on the very first check?"
+assert __stdout__.strip() == "3.0", f"It should print 3.0, but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'The count is an output',
     body: `Same loop, counting its own passes:

@@ -100,6 +100,21 @@ for r in rows:
         found = found + 1
 print(found)`,
   },
+  build: {
+    task: `Given \`rows = [[1, 2], [3, 4]]\` and \`target = [3, 4]\`, write code from
+scratch that counts, in \`found\`, how many rows in \`rows\` equal \`target\` by
+**value** (not by identity), and prints \`found\`. Since \`[3, 4]\` is in
+\`rows\`, it should print \`1\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+ops = [op for n in ast.walk(tree) if isinstance(n, ast.Compare) for op in n.ops]
+assert not any(isinstance(op, ast.Is) for op in ops), "There's still an 'is' in the condition. 'is' asks whether two names point at the very same object — is that what 'the row I'm looking for is in this list' actually means?"
+assert found == 1, f"found came out as {found}. [3, 4] really is in rows, so 1 is the answer — is the condition comparing values, or identities?"
+assert __stdout__.strip() == "1", f"It should print 1, but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'Why is sometimes works, which is the dangerous part',
     body: `Try this:

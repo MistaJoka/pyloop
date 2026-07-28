@@ -146,6 +146,24 @@ for r in rows:
         bad = bad + 1
 print(kept, bad)`,
   },
+  build: {
+    task: `Given \`rows = ["10", "n/a", "30"]\`, write code from scratch that loops
+over \`rows\`, and for each one tries to convert it to an \`int\` and append
+it to \`kept\` — catching \`ValueError\` per row so one bad row doesn't stop
+the rest, and counting the rejections in \`bad\`. Print \`kept\` and \`bad\`.
+It should print \`[10, 30] 1\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+tries = [n for n in ast.walk(tree) if isinstance(n, ast.Try)]
+assert tries, "The try/except is gone — 'n/a' is still unreadable and still has to be survivable."
+assert not any(isinstance(a, ast.For) for t in tries for a in ast.walk(t)), "The whole for loop is still inside the try, so the first bad row still ends the loop. Which one should be inside the other?"
+assert kept == [10, 30], f"kept came out as {kept}, expected [10, 30]. If 30 is missing, the loop stopped at 'n/a' instead of stepping over it — 30 was never even looked at."
+assert bad == 1, f"bad came out as {bad}, expected 1 — exactly one row of the three is unreadable."
+assert __stdout__.strip() == "[10, 30] 1", f"It should print '[10, 30] 1', but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'You already used finally without writing it',
     body: `From the files topic:

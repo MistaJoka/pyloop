@@ -117,6 +117,24 @@ tier = "silver"
 rate = rates.get(tier, 0.0)
 print(rate)`,
   },
+  build: {
+    task: `Given \`tier = "silver"\`, write code from scratch — using a dict lookup, no
+\`if\`/\`elif\` anywhere — that maps \`"gold"\` to \`0.2\`, \`"silver"\` to \`0.1\`,
+\`"bronze"\` to \`0.05\`, with \`0.0\` as the fallback for anything else, and
+prints the rate for \`tier\`. It should print \`0.1\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+assert not any(isinstance(n, (ast.If, ast.IfExp)) for n in ast.walk(tree)), "There's still a branch in there. The point is that the table replaces the chain entirely — if the tiers live in a dict, what's left for an if to decide?"
+dicts = [n for n in ast.walk(tree) if isinstance(n, ast.Dict)]
+assert dicts, "No dict yet. The four outcomes want to be data, not control flow: what would {'gold': 0.2, ...} give you?"
+keys = {k.value for d in dicts for k in d.keys if isinstance(k, ast.Constant)}
+assert {"gold", "silver", "bronze"} <= keys, f"The table only knows about {sorted(keys)}. All three tiers still need a rate — the 0.0 is for the things that aren't tiers at all."
+assert rate == 0.1, f"rate came out as {rate}, but silver's rate is 0.1. Is the lookup finding the row?"
+assert __stdout__.strip() == "0.1", f"It should print 0.1, but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'The same move, one rung up',
     body: `A dict can hold anything — including functions. So dispatch isn't limited

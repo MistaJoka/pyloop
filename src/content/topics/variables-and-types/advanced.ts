@@ -108,6 +108,19 @@ backup.append(99)
 print(original)
 print(backup)`,
   },
+  build: {
+    task: `Given \`original = [1, 2, 3]\`, write code from scratch that creates \`backup\`
+as a genuinely separate copy of \`original\` (not a second name for the same
+list), appends \`99\` to \`backup\`, and prints \`original\` then \`backup\`. It
+should print \`[1, 2, 3]\` then \`[1, 2, 3, 99]\`.`,
+    check: {
+      kind: 'asserts',
+      code: `assert backup == [1, 2, 3, 99], f"backup came out as {backup!r}, expected [1, 2, 3, 99] — the append should still happen, just not to original."
+assert original == [1, 2, 3], f"original came out as {original!r}. Nothing on any line appends to original — so how did 99 get in there? What does backup = original actually copy?"
+assert original is not backup, "original and backup still name the same list object, so anything done to one shows up in the other. What would make backup a separate list?"
+assert __stdout__.strip() == "[1, 2, 3]\\n[1, 2, 3, 99]", f"It should print [1, 2, 3] then [1, 2, 3, 99], but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'Why == is almost always the one you want',
     body: `\`is\` is for identity, and there are really only two everyday uses:

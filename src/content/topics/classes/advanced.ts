@@ -126,6 +126,28 @@ for r in readings:
     if r.hot():
         print(r.day, "hot")`,
   },
+  build: {
+    task: `Write code from scratch: define a class \`Reading\` with
+\`__init__(self, day, temp)\` storing both on \`self\`, and a method
+\`hot(self)\` that returns whether \`temp > 65\`. Build one list of
+readings — \`Reading("mon", 61)\`, \`Reading("tue", 78)\`,
+\`Reading("wed", 70)\` — then loop over it and print the day of every
+reading where \`hot()\` is true. It should print \`tue hot\` then
+\`wed hot\`.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+classes = [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
+assert classes, "No class yet. The day and its temperature are one fact stored as two, joined only by an index — what would let them travel as a single value?"
+methods = {f.name for c in classes for f in c.body if isinstance(f, ast.FunctionDef)}
+assert '__init__' in methods, "The class has no __init__, so a reading has no way to be handed its day and its temperature when it's made."
+assert methods - {'__init__', '__repr__'}, "The class holds the data but none of the behaviour, which makes it a dict with extra typing. The 'temp > 65' test is a question about a reading — where should the answer to it live?"
+lits = [n for n in ast.walk(tree) if isinstance(n, ast.List) and len(n.elts) == 3 and all(isinstance(e, ast.Constant) for e in n.elts)]
+assert not lits, "One of the parallel lists is still there. The move is one list of three readings, not two lists of three loose values — while both lists exist, the index can still drift."
+assert __stdout__.split() == ["tue", "hot", "wed", "hot"], f"It should still print the same two hot days — tue and wed. It printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'When the class is only data, let Python write it',
     body: `Sometimes the honest answer is "it really is just fields". Writing \`__init__\` and

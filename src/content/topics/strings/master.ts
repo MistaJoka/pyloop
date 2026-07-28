@@ -107,6 +107,16 @@ assert __stdout__.strip() == "5", f"It should print 5, but it printed {__stdout_
 size = len(word.encode("utf-8"))
 print(size)`,
   },
+  build: {
+    task: `Given \`word = "café"\`, write code from scratch that computes and prints
+the number of **bytes** it takes when encoded as UTF-8 (not the character
+count). It should print \`5\`.`,
+    check: {
+      kind: 'asserts',
+      code: `assert size == 5, f"size came out as {size} — that's the character count, and it's correct as far as it goes. But 'é' costs two bytes in UTF-8. What do you have to turn the string into before len() counts bytes instead of characters?"
+assert __stdout__.strip() == "5", f"It should print 5, but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'Why a space changes the number',
     body: `A tokeniser maps chunks of text to integers from a fixed vocabulary. Here's

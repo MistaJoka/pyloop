@@ -107,6 +107,23 @@ qty = 12
 row = f"{item:<8}{qty:>4}"
 print(row)`,
   },
+  build: {
+    task: `Given \`item = "kiwi"\` and \`qty = 12\`, write code from scratch that builds
+one receipt row as a value stored in \`row\` — the item left-aligned in 8
+characters, the quantity right-aligned in 4 — and prints it. It should print
+\`kiwi      12\` (12 characters wide).`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+assert 'row' in dir(), "There's no variable called row anymore — the row has to exist as a value, not just as something printed."
+assert isinstance(row, str), f"row is {row!r} — a row of a table is text, laid out."
+assert any(isinstance(n, ast.JoinedStr) for n in ast.walk(tree)), "The padding looks typed in by hand. Count the spaces for an item called 'watermelon' and you'll see why that doesn't hold. What syntax says 'this value, padded to 8'?"
+assert len(row) == 12, f"row is {row!r} — that's {len(row)} characters. Rows only line up if every row is the same width no matter what's in it. 8 for the item plus 4 for the quantity is how many?"
+assert row == "kiwi      12", f"row is {row!r}, expected 'kiwi      12' — the item left-aligned in 8, then the quantity right-aligned in 4."
+assert __stdout__.strip() == "kiwi      12", f"It should print the row, but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'The whole ladder, in one habit',
     body: `Look back at what changed. Level 1: text goes out, text comes in. Level 5: the

@@ -113,6 +113,20 @@ board[0][0] = 1
 print(template)
 print(board)`,
   },
+  build: {
+    task: `Given \`template = [[0, 0], [0, 0]]\`, write code from scratch that creates
+\`board\` as a genuinely independent deep copy of \`template\` (so editing a
+row of \`board\` never touches \`template\`), sets \`board[0][0] = 1\`, and
+prints \`template\` then \`board\`. It should print \`[[0, 0], [0, 0]]\` then
+\`[[1, 0], [0, 0]]\`.`,
+    check: {
+      kind: 'asserts',
+      code: `assert board == [[1, 0], [0, 0]], f"board came out as {board!r} — the 1 should still land in board, expected [[1, 0], [0, 0]]."
+assert template == [[0, 0], [0, 0]], f"template came out as {template!r}. No line writes to template. list(template) copied the outer list — so what were the two things inside it?"
+assert template[0] is not board[0], "The outer lists are separate now, but template[0] and board[0] are still one row object with two names — write through either and both change. How deep does the copy need to go?"
+assert __stdout__.strip() == "[[0, 0], [0, 0]]\\n[[1, 0], [0, 0]]", f"It should print [[0, 0], [0, 0]] then [[1, 0], [0, 0]], but it printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'Why a tuple can be a dict key and a list cannot',
     body: `A dict finds things by **hashing** the key — turning it into a number

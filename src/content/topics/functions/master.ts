@@ -120,6 +120,24 @@ assert __stdout__.strip() == "['a']\\n['b']", f"Expected ['a'] then ['b'], got {
 print(collect("a"))
 print(collect("b"))`,
   },
+  build: {
+    task: `Write code from scratch: define \`collect(item, bag=None)\` so every call
+with no \`bag\` starts from a genuinely fresh empty list (avoid a mutable
+default argument like \`bag=[]\`), appends \`item\` to it, and returns it.
+Then call \`print(collect("a"))\` followed by \`print(collect("b"))\`. It
+should print \`['a']\` then \`['b']\` — the second call must not remember the
+first.`,
+    check: {
+      kind: 'asserts',
+      code: `import ast
+tree = ast.parse(__source__)
+fn = next((n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == 'collect'), None)
+assert fn is not None, "collect is gone. It's the thing being fixed — keep it."
+assert len(fn.args.args) == 2 and len(fn.args.defaults) == 1, "collect should still take an item plus an optional bag — calling it with one argument has to keep working."
+assert not any(isinstance(d, (ast.List, ast.Dict, ast.Set)) for d in fn.args.defaults), "The default is still a list literal. That list gets built once, when the def line runs. How many times does a def line run, no matter how many calls follow?"
+assert __stdout__.strip() == "['a']\\n['b']", f"Expected ['a'] then ['b'], got {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'The contract, in one comparison',
     body: `These two look like the same function:

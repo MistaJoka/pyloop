@@ -114,6 +114,17 @@ point = (0, 1)
 seen[point] = "visited"
 print(seen[(0, 1)])`,
   },
+  build: {
+    task: `Write code from scratch that stores \`"visited"\` in a dict called \`seen\`
+under the key \`(0, 1)\` — a tuple, since a list can't be a dict key — and
+prints \`seen[(0, 1)]\`. It should print \`visited\`.`,
+    check: {
+      kind: 'asserts',
+      code: `assert 'seen' in dir(), "There's no dict called seen anymore — keep it."
+assert seen == {(0, 1): "visited"}, f"seen is {seen!r}. It should file 'visited' under the position (0, 1) as a single key — did the two coordinates stay together?"
+assert __stdout__.strip() == "visited", f"It should print visited. It printed {__stdout__.strip()!r}."`,
+    },
+  },
   stretch: {
     title: 'The bug the rule is protecting you from',
     body: `Python's refusal looks pedantic until you see what it prevents. Suppose lists
