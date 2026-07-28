@@ -1,22 +1,27 @@
 import { useEffect, useState } from 'react'
-import { levelName, type Level, type Topic } from '../content/types'
+import { levelName, type Level, type LevelId, type Topic } from '../content/types'
 import type { Runtime } from '../engine/runtime'
 import type { TraceResult } from '../engine/types'
 import { Watch } from './Watch'
 import { Predict } from './Predict'
 import { Fix } from './Fix'
+import { Build } from './Build'
 import { Done } from './Done'
 import { Markdown } from './Markdown'
 
-type Stage = 'concept' | 'watch' | 'predict' | 'fix' | 'done'
-const STAGES: Stage[] = ['concept', 'watch', 'predict', 'fix', 'done']
+type Stage = 'concept' | 'watch' | 'predict' | 'fix' | 'build' | 'done'
+
 const LABELS: Record<Stage, string> = {
   concept: 'Idea',
   watch: 'Watch',
   predict: 'Predict',
   fix: 'Fix',
+  build: 'Build',
   done: 'Done',
 }
+
+/** Levels 4-5 compose from nothing; levels 1-3 repair something broken. */
+const fourthStage = (level: LevelId): 'fix' | 'build' => (level >= 4 ? 'build' : 'fix')
 
 export function LoopShell({
   topic,
@@ -73,6 +78,8 @@ export function LoopShell({
 
   const nextInTopic = topic.levels.find((l) => l.level === level.level + 1) ?? null
 
+  const stages: Stage[] = ['concept', 'watch', 'predict', fourthStage(level.level), 'done']
+
   return (
     <div>
       {/* Stage rail — where you are in the seven minutes */}
@@ -80,8 +87,8 @@ export function LoopShell({
         <button onClick={onExit} className="label mr-3 text-[10px]" style={{ color: 'var(--dim)' }}>
           ← Map
         </button>
-        {STAGES.map((s) => {
-          const done = STAGES.indexOf(s) < STAGES.indexOf(stage)
+        {stages.map((s) => {
+          const done = stages.indexOf(s) < stages.indexOf(stage)
           const here = s === stage
           return (
             <div key={s} className="flex items-center gap-2">
@@ -170,7 +177,7 @@ export function LoopShell({
           level={level}
           onDone={(correct) => {
             setPredictCorrect(correct)
-            setStage('fix')
+            setStage(fourthStage(level.level))
           }}
         />
       )}
@@ -184,6 +191,24 @@ export function LoopShell({
             setStage('done')
           }}
         />
+      )}
+
+      {stage === 'build' && level.build && (
+        <Build
+          build={level.build}
+          runtime={runtime}
+          onDone={(assisted) => {
+            onComplete({ predictCorrect, assisted })
+            setStage('done')
+          }}
+        />
+      )}
+
+      {stage === 'build' && !level.build && (
+        <p className="mono text-[13px]" style={{ color: 'var(--hot)' }}>
+          This level is missing its build content — that's a content bug, not
+          yours. (verify-content should have caught this before it shipped.)
+        </p>
       )}
 
       {stage === 'done' && (
