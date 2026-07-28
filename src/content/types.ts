@@ -85,6 +85,20 @@ export type Level = {
      *  that doesn't actually pass fails the build. */
     solution: string
   }
+  /** Levels 4 and 5 only: replaces `fix` as the loop's fourth stage. No
+   *  starting code — Build hands you a task, not something broken, because by
+   *  Advanced/Master you've had the whole rung to learn the idea and this
+   *  stage is asking you to compose it, not recover it.
+   *
+   *  `check` must be the exact same Check as this level's `fix.check` — see
+   *  the Global Constraints note in the Build/Review plan. That's what lets
+   *  verify-content prove it's reachable without a second solution field:
+   *  `fix.solution` already satisfies it. */
+  build?: {
+    task: string
+    stdin?: string
+    check: Check
+  }
   /** Optional deeper cut. Always skippable; never gates DONE. */
   stretch?: { title: string; body: string; code?: string }
 }
