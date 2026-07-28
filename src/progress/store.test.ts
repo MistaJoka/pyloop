@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { completeLevel, load, needsAnotherLook, save, type Progress } from './store'
+import { completeLevel, load, needsAnotherLook, nextInterval, save, type Progress } from './store'
 
 /** Drive the clock to a specific LOCAL wall-clock moment. */
 function at(local: string) {
@@ -117,5 +117,28 @@ describe('persistence', () => {
   it('returns empty progress rather than throwing on corrupt data', () => {
     localStorage.setItem('pyloop.progress.v1', '{not json')
     expect(load().topics).toEqual({})
+  })
+})
+
+describe('nextInterval', () => {
+  it('starts a never-reviewed item at 1 day', () => {
+    expect(nextInterval(null, true)).toBe(1)
+  })
+
+  it('advances 1 -> 3 -> 7 -> 30 on repeated correct answers', () => {
+    expect(nextInterval(1, true)).toBe(3)
+    expect(nextInterval(3, true)).toBe(7)
+    expect(nextInterval(7, true)).toBe(30)
+  })
+
+  it('holds at 30 once matured', () => {
+    expect(nextInterval(30, true)).toBe(30)
+  })
+
+  it('resets to 1 on a wrong answer, from any interval', () => {
+    expect(nextInterval(1, false)).toBe(1)
+    expect(nextInterval(7, false)).toBe(1)
+    expect(nextInterval(30, false)).toBe(1)
+    expect(nextInterval(null, false)).toBe(1)
   })
 })

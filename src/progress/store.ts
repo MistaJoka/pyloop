@@ -128,3 +128,17 @@ export const clearedCount = (p: Progress, topicId: string) =>
 export function nextLevel(p: Progress, topicId: string, levels: LevelId[]): LevelId | null {
   return levels.find((l) => !isLevelDone(p, topicId, l)) ?? null
 }
+
+const REVIEW_SCHEDULE = [1, 3, 7, 30]
+
+/** Standard spaced-repetition progression: 1 -> 3 -> 7 -> 30 days, held at 30
+ *  once matured. Any wrong answer resets to 1, from whatever interval it was
+ *  at. `current` is the interval that was just tested — null before a level
+ *  has ever been reviewed. */
+export function nextInterval(current: number | null, correct: boolean): number {
+  if (!correct) return REVIEW_SCHEDULE[0]
+  if (current === null) return REVIEW_SCHEDULE[0]
+  const i = REVIEW_SCHEDULE.indexOf(current)
+  if (i === -1 || i === REVIEW_SCHEDULE.length - 1) return REVIEW_SCHEDULE[REVIEW_SCHEDULE.length - 1]
+  return REVIEW_SCHEDULE[i + 1]
+}
