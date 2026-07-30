@@ -46,9 +46,9 @@ export function ReviewCalendar({
   return (
     <div>
       <div className="mb-4 flex items-center gap-4">
-        <button onClick={() => shift(-1)} className="label text-[11px]" style={{ color: 'var(--dim)' }}>←</button>
-        <span className="label text-[13px]" style={{ color: 'var(--ink)' }}>{monthLabel}</span>
-        <button onClick={() => shift(1)} className="label text-[11px]" style={{ color: 'var(--dim)' }}>→</button>
+        <button onClick={() => shift(-1)} className="label t-label" style={{ color: 'var(--dim)' }}>←</button>
+        <span className="label t-mono" style={{ color: 'var(--ink)' }}>{monthLabel}</span>
+        <button onClick={() => shift(1)} className="label t-label" style={{ color: 'var(--dim)' }}>→</button>
       </div>
       <div className="grid grid-cols-7 gap-1">
         {days.map((day, i) => {
@@ -65,15 +65,21 @@ export function ReviewCalendar({
               key={day}
               disabled={!clickable}
               onClick={() => clickable && onOpenDay(day)}
-              className="mono flex flex-col items-center rounded p-2 text-[11px]"
+              className={`mono t-label flex flex-col items-center gap-0.5 rounded p-1.5 ${clickable ? 'lift' : ''}`}
               style={{
                 border: `1px solid ${day === todayStr ? 'var(--amber)' : 'var(--rule)'}`,
-                color: clickable ? 'var(--amber)' : 'var(--dim)',
-                opacity: clickable ? 1 : 0.6,
+                background: 'var(--panel)',
+                color: clickable ? 'var(--ink)' : 'var(--dim)',
+                opacity: clickable || day === todayStr ? 1 : 0.55,
               }}
             >
               <span>{Number(day.slice(-2))}</span>
-              {count > 0 && <span style={{ color: 'var(--good)' }}>{count}</span>}
+              {count > 0 && (
+                <span className="flex items-center gap-1" style={{ color: 'var(--good)' }}>
+                  <span aria-hidden className="h-1 w-1 rounded-full" style={{ background: 'var(--good)' }} />
+                  {count}
+                </span>
+              )}
             </button>
           )
         })}

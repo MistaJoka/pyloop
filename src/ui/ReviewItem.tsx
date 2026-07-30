@@ -46,7 +46,7 @@ export function ReviewItem({
 
   return (
     <div>
-      <p className="label mb-4 text-[10px]" style={{ color: 'var(--dim)' }}>
+      <p className="label mb-4 t-label" style={{ color: 'var(--dim)' }}>
         {topic.title} · <span style={{ color: 'var(--amber)' }}>{levelName(level.level)}</span> · review
       </p>
 
@@ -57,15 +57,15 @@ export function ReviewItem({
       {stage === 'replay' &&
         (traceFailed ? (
           <div>
-            <p className="mono text-[13px]" style={{ color: 'var(--hot)' }}>
+            <p className="mono t-mono" style={{ color: 'var(--hot)' }}>
               Couldn't load the trace — try again
             </p>
           </div>
         ) : tracing || !trace ? (
           <p style={{ color: 'var(--dim)' }}>Tracing…</p>
         ) : (
-          <div>
-            <p className="label mb-3 text-[10px]" style={{ color: 'var(--amber)' }}>
+          <div className="fade-rise">
+            <p className="label mb-3 t-label" style={{ color: 'var(--amber)' }}>
               Missed it — here's the trace again
             </p>
             <Watch
@@ -79,8 +79,8 @@ export function ReviewItem({
         ))}
 
       {stage === 'reask' && (
-        <div>
-          <p className="label mb-3 text-[10px]" style={{ color: 'var(--dim)' }}>
+        <div className="fade-rise">
+          <p className="label mb-3 t-label" style={{ color: 'var(--dim)' }}>
             Once more, now that you've seen it
           </p>
           {/* This second attempt is for reinforcement only — the schedule

@@ -26,11 +26,11 @@ export function Review({
 
     if (queue.length === 0) {
       return (
-        <div>
-          <p className="label text-[13px]" style={{ color: 'var(--good)' }}>All caught up.</p>
+        <div className="fade-rise">
+          <p className="label t-mono" style={{ color: 'var(--good)' }}>All caught up.</p>
           <button
             onClick={() => setQueue(null)}
-            className="label mt-4 text-[10px]"
+            className="label mt-4 t-label"
             style={{ color: 'var(--dim)' }}
           >
             ← Calendar
