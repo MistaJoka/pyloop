@@ -90,13 +90,18 @@ export function LoopShell({
           return (
             <div key={s} className="flex items-center gap-2">
               <span
-                className="label text-[10px]"
-                style={{ color: here ? 'var(--amber)' : done ? 'var(--good)' : 'var(--rule)' }}
+                className="label t-label"
+                style={{
+                  color: here ? 'var(--amber)' : done ? 'var(--good)' : 'var(--rule)',
+                  borderBottom: `2px solid ${here ? 'var(--amber)' : 'transparent'}`,
+                  paddingBottom: 2,
+                  transition: 'border-color 120ms ease-out, color 120ms ease-out',
+                }}
               >
                 {LABELS[s]}
               </span>
               {s !== 'done' && (
-                <span style={{ color: 'var(--rule)' }} className="text-[10px]">
+                <span style={{ color: 'var(--rule)' }} className="t-label">
                   ·
                 </span>
               )}
@@ -106,118 +111,120 @@ export function LoopShell({
       </div>
 
       {/* Which rung you're on */}
-      <p className="label mb-8 text-[10px]" style={{ color: 'var(--dim)' }}>
+      <p className="label mb-8 t-label" style={{ color: 'var(--dim)' }}>
         {topic.title} · <span style={{ color: 'var(--amber)' }}>{levelName(level.level)}</span> ·{' '}
         {level.level} of {topic.levels.length}
       </p>
 
-      {stage === 'concept' && (
-        <div>
-          <h2 className="label text-3xl" style={{ color: 'var(--ink)' }}>
-            {topic.title}
-          </h2>
-          <p className="mt-1 text-lg" style={{ color: 'var(--dim)' }}>
-            {level.blurb}
-          </p>
-          <div className="mt-5 max-w-2xl text-lg" style={{ color: 'var(--dim)' }}>
-            <Markdown text={level.concept.body} />
-          </div>
-
-          <div
-            className="mt-8 max-w-2xl rounded p-5"
-            style={{ background: 'var(--panel)', borderLeft: '2px solid var(--amber)' }}
-          >
-            <p className="label mb-2 text-[10px]" style={{ color: 'var(--amber)' }}>
-              Why it matters for AI
-            </p>
-            <div style={{ color: 'var(--dim)' }}>
-              <Markdown text={level.concept.aiFraming} />
-            </div>
-          </div>
-
-          <button
-            onClick={() => setStage('watch')}
-            className="label mt-8 rounded px-5 py-2.5 text-[11px]"
-            style={{ background: 'var(--amber)', color: 'var(--ground)' }}
-          >
-            Watch it run →
-          </button>
-        </div>
-      )}
-
-      {stage === 'watch' &&
-        (traceFailed ? (
+      <div key={stage} className="fade-rise">
+        {stage === 'concept' && (
           <div>
-            <p className="mono text-[13px]" style={{ color: 'var(--hot)' }}>
-              Couldn't run the trace: {traceFailed}
+            <h2 className="label text-3xl" style={{ color: 'var(--ink)' }}>
+              {topic.title}
+            </h2>
+            <p className="mt-1 text-lg" style={{ color: 'var(--dim)' }}>
+              {level.blurb}
             </p>
-            <button
-              onClick={() => setStage('predict')}
-              className="label mt-6 rounded px-5 py-2.5 text-[11px]"
-              style={{ border: '1px solid var(--rule)', color: 'var(--ink)' }}
+            <div className="mt-5 max-w-2xl text-lg" style={{ color: 'var(--dim)' }}>
+              <Markdown text={level.concept.body} />
+            </div>
+
+            <div
+              className="mt-8 max-w-2xl rounded p-5"
+              style={{ background: 'var(--panel)', borderLeft: '2px solid var(--amber)' }}
             >
-              Skip ahead →
+              <p className="label mb-2 text-[10px]" style={{ color: 'var(--amber)' }}>
+                Why it matters for AI
+              </p>
+              <div style={{ color: 'var(--dim)' }}>
+                <Markdown text={level.concept.aiFraming} />
+              </div>
+            </div>
+
+            <button
+              onClick={() => setStage('watch')}
+              className="label mt-8 rounded px-5 py-2.5 text-[11px]"
+              style={{ background: 'var(--amber)', color: 'var(--ground)' }}
+            >
+              Watch it run →
             </button>
           </div>
-        ) : (
-          <Watch
-            code={level.watch.code}
-            result={trace ?? { steps: [], stdout: '', error: null, capped: false }}
-            notes={level.watch.notes}
-            loading={tracing || !trace}
-            onDone={() => setStage('predict')}
+        )}
+
+        {stage === 'watch' &&
+          (traceFailed ? (
+            <div>
+              <p className="mono text-[13px]" style={{ color: 'var(--hot)' }}>
+                Couldn't run the trace: {traceFailed}
+              </p>
+              <button
+                onClick={() => setStage('predict')}
+                className="label mt-6 rounded px-5 py-2.5 text-[11px]"
+                style={{ border: '1px solid var(--rule)', color: 'var(--ink)' }}
+              >
+                Skip ahead →
+              </button>
+            </div>
+          ) : (
+            <Watch
+              code={level.watch.code}
+              result={trace ?? { steps: [], stdout: '', error: null, capped: false }}
+              notes={level.watch.notes}
+              loading={tracing || !trace}
+              onDone={() => setStage('predict')}
+            />
+          ))}
+
+        {stage === 'predict' && (
+          <Predict
+            level={level}
+            nextLabel={level.level >= 4 ? 'Now build one →' : 'Now fix one →'}
+            onDone={(correct) => {
+              setPredictCorrect(correct)
+              setStage(fourthStage(level.level))
+            }}
           />
-        ))}
+        )}
 
-      {stage === 'predict' && (
-        <Predict
-          level={level}
-          nextLabel={level.level >= 4 ? 'Now build one →' : 'Now fix one →'}
-          onDone={(correct) => {
-            setPredictCorrect(correct)
-            setStage(fourthStage(level.level))
-          }}
-        />
-      )}
+        {stage === 'fix' && (
+          <Fix
+            level={level}
+            runtime={runtime}
+            onDone={(assisted) => {
+              onComplete({ predictCorrect, assisted })
+              setStage('done')
+            }}
+          />
+        )}
 
-      {stage === 'fix' && (
-        <Fix
-          level={level}
-          runtime={runtime}
-          onDone={(assisted) => {
-            onComplete({ predictCorrect, assisted })
-            setStage('done')
-          }}
-        />
-      )}
+        {stage === 'build' && level.build && (
+          <Build
+            build={level.build}
+            runtime={runtime}
+            onDone={(assisted) => {
+              onComplete({ predictCorrect, assisted })
+              setStage('done')
+            }}
+          />
+        )}
 
-      {stage === 'build' && level.build && (
-        <Build
-          build={level.build}
-          runtime={runtime}
-          onDone={(assisted) => {
-            onComplete({ predictCorrect, assisted })
-            setStage('done')
-          }}
-        />
-      )}
+        {stage === 'build' && !level.build && (
+          <p className="mono text-[13px]" style={{ color: 'var(--hot)' }}>
+            This level is missing its build content — that's a content bug, not
+            yours. (verify-content should have caught this before it shipped.)
+          </p>
+        )}
 
-      {stage === 'build' && !level.build && (
-        <p className="mono text-[13px]" style={{ color: 'var(--hot)' }}>
-          This level is missing its build content — that's a content bug, not
-          yours. (verify-content should have caught this before it shipped.)
-        </p>
-      )}
-
-      {stage === 'done' && (
-        <Done
-          topic={topic}
-          level={level}
-          nextLevel={nextInTopic}
-          onBackToMap={onExit}
-          onNextLevel={onNextLevel}
-        />
-      )}
+        {stage === 'done' && (
+          <Done
+            topic={topic}
+            level={level}
+            nextLevel={nextInTopic}
+            onBackToMap={onExit}
+            onNextLevel={onNextLevel}
+          />
+        )}
+      </div>
     </div>
   )
 }
