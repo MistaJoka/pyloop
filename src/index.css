@@ -93,7 +93,7 @@ body {
 }
 .lift:hover,
 .lift:focus-visible {
-  border-color: rgba(255, 182, 39, 0.45) !important;
+  border-color: color-mix(in srgb, var(--amber) 45%, transparent) !important;
   background-color: var(--panel-hi) !important;
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
