@@ -22,10 +22,10 @@ function VisitLine({
   return (
     <button
       onClick={onJump}
-      className="mono flex w-full items-baseline gap-3 rounded px-2 py-1.5 text-left text-[12px] hover:bg-[color:var(--panel-hi)]"
+      className="mono flex w-full items-baseline gap-3 rounded px-2 py-1.5 text-left t-label hover:bg-[color:var(--panel-hi)]"
       title="Jump the player to this moment"
     >
-      <span className="label w-12 shrink-0 text-[9px]" style={{ color: 'var(--rule)' }}>
+      <span className="label w-12 shrink-0 t-label" style={{ color: 'var(--rule)' }}>
         {isLoopHeader && nothing ? '·' : `#${visit.nth}`}
       </span>
 
@@ -54,7 +54,7 @@ function VisitLine({
 
         {printed && (
           <span className="inline-block">
-            <span className="label mr-2 text-[9px]" style={{ color: 'var(--rule)' }}>
+            <span className="label mr-2 t-label" style={{ color: 'var(--rule)' }}>
               printed
             </span>
             <span style={{ color: 'var(--good)' }}>{JSON.stringify(printed)}</span>
@@ -88,22 +88,22 @@ export function LineDetail({
   return (
     <div className="mt-px p-5" style={{ background: 'var(--panel)' }}>
       <div className="flex items-baseline gap-3">
-        <span className="label text-[10px]" style={{ color: 'var(--amber)' }}>
+        <span className="label t-label" style={{ color: 'var(--amber)' }}>
           Line {detail.line}
         </span>
-        <code className="mono flex-1 text-[13px]" style={{ color: 'var(--ink)' }}>
+        <code className="mono flex-1 t-mono" style={{ color: 'var(--ink)' }}>
           {detail.source.trim()}
         </code>
         {note && (
           <button
             onClick={() => setShowNote((s) => !s)}
-            className="label text-[10px]"
+            className="label t-label"
             style={{ color: showNote ? 'var(--amber)' : 'var(--dim)' }}
           >
             {showNote ? 'Hide' : 'What is this?'}
           </button>
         )}
-        <button onClick={onClose} className="label text-[10px]" style={{ color: 'var(--dim)' }}>
+        <button onClick={onClose} className="label t-label" style={{ color: 'var(--dim)' }}>
           Close
         </button>
       </div>
@@ -112,7 +112,7 @@ export function LineDetail({
           about what happened unless he asks. */}
       {showNote && note && (
         <div
-          className="mt-4 rounded p-4 text-[15px]"
+          className="mt-4 rounded p-4 t-mono"
           style={{ background: 'var(--ground)', borderLeft: '2px solid var(--amber)' }}
         >
           <div style={{ color: 'var(--dim)' }}>
@@ -121,13 +121,13 @@ export function LineDetail({
         </div>
       )}
 
-      <p className="label mt-4 text-[10px]" style={{ color: 'var(--dim)' }}>
+      <p className="label mt-4 t-label" style={{ color: 'var(--dim)' }}>
         {n === 0 ? 'Never ran' : n === 1 ? 'Ran once' : `Ran ${n} times`}
         {n > 0 && <span style={{ color: 'var(--rule)' }}> · click a row to jump there</span>}
       </p>
 
       {n === 0 ? (
-        <p className="mt-2 text-sm" style={{ color: 'var(--rule)' }}>
+        <p className="mt-2 t-body" style={{ color: 'var(--rule)' }}>
           This line never executed, so there's nothing to show.
         </p>
       ) : (
@@ -144,7 +144,7 @@ export function LineDetail({
       )}
 
       {detail.untouched.length > 0 && n > 0 && (
-        <p className="mono mt-4 text-[11px]" style={{ color: 'var(--rule)' }}>
+        <p className="mono mt-4 t-label" style={{ color: 'var(--rule)' }}>
           never touched by this line: {detail.untouched.join(', ')}
         </p>
       )}

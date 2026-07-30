@@ -63,7 +63,7 @@ export function Fix({
         autoCorrect="off"
         autoComplete="off"
         rows={code.split('\n').length + 2}
-        className="mono w-full resize-y rounded p-4 text-[13px] leading-7"
+        className="mono w-full resize-y rounded p-4 t-mono leading-7"
         style={{
           background: 'var(--panel)',
           color: 'var(--ink)',
@@ -75,7 +75,7 @@ export function Fix({
         <button
           onClick={submit}
           disabled={busy}
-          className="label rounded px-5 py-2.5 text-[11px]"
+          className="label rounded px-5 py-2.5 t-label"
           style={{ background: 'var(--amber)', color: 'var(--ground)', opacity: busy ? 0.5 : 1 }}
         >
           {busy ? 'Running…' : 'Run it'}
@@ -83,7 +83,7 @@ export function Fix({
 
         <button
           onClick={() => setCode(level.fix.brokenCode)}
-          className="label rounded px-4 py-2.5 text-[11px]"
+          className="label rounded px-4 py-2.5 t-label"
           style={{ border: '1px solid var(--rule)', color: 'var(--dim)' }}
         >
           Reset
@@ -92,7 +92,7 @@ export function Fix({
         {!hintsSpent && (
           <button
             onClick={() => setHintsShown((n) => n + 1)}
-            className="label rounded px-4 py-2.5 text-[11px]"
+            className="label rounded px-4 py-2.5 t-label"
             style={{ border: '1px solid var(--rule)', color: 'var(--dim)' }}
           >
             {hintsShown === 0 ? 'Stuck?' : 'Another nudge'}
@@ -110,7 +110,7 @@ export function Fix({
               setAssisted(true)
               setResult(null)
             }}
-            className="label rounded px-4 py-2.5 text-[11px]"
+            className="label rounded px-4 py-2.5 t-label"
             style={{ border: '1px solid var(--amber)', color: 'var(--amber)' }}
           >
             Show me the working version
@@ -119,7 +119,7 @@ export function Fix({
       </div>
 
       {assisted && !passed && (
-        <p className="mt-4 text-sm" style={{ color: 'var(--dim)' }}>
+        <p className="mt-4 t-body" style={{ color: 'var(--dim)' }}>
           Here's one that works. Read it, run it, and see it go green — then this level comes
           back later so you get a clean shot at it.
         </p>
@@ -131,7 +131,7 @@ export function Fix({
           {level.fix.hints.slice(0, hintsShown).map((h, n) => (
             <div
               key={n}
-              className="rounded p-4 text-[15px]"
+              className="rounded p-4 t-mono"
               style={{ background: 'var(--panel)', borderLeft: '2px solid var(--amber)' }}
             >
               <Markdown text={h} />
@@ -143,15 +143,15 @@ export function Fix({
       {result && (
         <div className="mt-5">
           {passed ? (
-            <p className="label text-[11px]" style={{ color: 'var(--good)' }}>
+            <p className="label t-label" style={{ color: 'var(--good)' }}>
               That's it
             </p>
           ) : (
             <>
-              <p className="label mb-2 text-[11px]" style={{ color: 'var(--hot)' }}>
+              <p className="label mb-2 t-label" style={{ color: 'var(--hot)' }}>
                 Not yet
               </p>
-              <p className="mono text-[13px]" style={{ color: 'var(--ink)' }}>
+              <p className="mono t-mono" style={{ color: 'var(--ink)' }}>
                 {result.error?.line != null && (
                   <span style={{ color: 'var(--dim)' }}>line {result.error.line}: </span>
                 )}
@@ -161,7 +161,7 @@ export function Fix({
           )}
           {result.stdout && (
             <pre
-              className="mono mt-3 whitespace-pre-wrap rounded p-3 text-[13px]"
+              className="mono mt-3 whitespace-pre-wrap rounded p-3 t-mono"
               style={{ background: 'var(--ground)', color: 'var(--dim)' }}
             >
               {result.stdout}
@@ -173,7 +173,7 @@ export function Fix({
       {passed && (
         <button
           onClick={() => onDone(assisted)}
-          className="label mt-6 rounded px-5 py-2.5 text-[11px]"
+          className="label mt-6 rounded px-5 py-2.5 t-label"
           style={{ background: 'var(--good)', color: 'var(--ground)' }}
         >
           Done →

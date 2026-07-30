@@ -132,7 +132,7 @@ export function Watch({
   if (loading) {
     return (
       <div className="flex h-72 items-center justify-center">
-        <p className="label text-sm" style={{ color: 'var(--dim)' }}>
+        <p className="label t-body" style={{ color: 'var(--dim)' }}>
           Warming up Python…
         </p>
       </div>
@@ -151,7 +151,7 @@ export function Watch({
       <div className="grid gap-px md:grid-cols-[1.4fr_1fr]" style={{ background: 'var(--rule)' }}>
         {/* Code. Amber = about to run. Dim rule = just ran. */}
         <div className="p-5" style={{ background: 'var(--panel)' }}>
-          <pre className="mono text-[13px] leading-7">
+          <pre className="mono t-mono leading-7">
             {lines.map((l, n) => {
               const num = n + 1
               const active = step && step.line === num
@@ -205,7 +205,7 @@ export function Watch({
                       natural reading is "the amber line made that value
                       change" — the exact opposite of the truth. */}
                   {active && (
-                    <span className="label ml-3 self-center text-[9px]" style={{ color: 'var(--amber)' }}>
+                    <span className="label ml-3 self-center t-label" style={{ color: 'var(--amber)' }}>
                       {crashed
                         ? 'crashed here'
                         : raised
@@ -214,13 +214,13 @@ export function Watch({
                     </span>
                   )}
                   {justRan && (
-                    <span className="label ml-3 self-center text-[9px]" style={{ color: 'var(--dim)' }}>
+                    <span className="label ml-3 self-center t-label" style={{ color: 'var(--dim)' }}>
                       just ran
                     </span>
                   )}
                   {clickable && !active && !justRan && (
                     <span
-                      className="label ml-3 self-center text-[9px] opacity-0 transition-opacity group-hover:opacity-100"
+                      className="label ml-3 self-center t-label opacity-0 transition-opacity group-hover:opacity-100"
                       style={{ color: 'var(--rule)' }}
                     >
                       {open ? '' : 'what did this do?'}
@@ -234,7 +234,7 @@ export function Watch({
 
         {/* Variables + stdout */}
         <div className="p-5" style={{ background: 'var(--panel)' }}>
-          <p className="label mb-3 text-[10px]" style={{ color: 'var(--dim)' }}>
+          <p className="label mb-3 t-label" style={{ color: 'var(--dim)' }}>
             Variables
           </p>
           <Variables
@@ -244,11 +244,11 @@ export function Watch({
             lenses={lenses}
           />
 
-          <p className="label mb-2 mt-6 text-[10px]" style={{ color: 'var(--dim)' }}>
+          <p className="label mb-2 mt-6 t-label" style={{ color: 'var(--dim)' }}>
             Output
           </p>
           <pre
-            className="mono min-h-[3rem] whitespace-pre-wrap rounded p-2 text-[13px]"
+            className="mono min-h-[3rem] whitespace-pre-wrap rounded p-2 t-mono"
             style={{ background: 'var(--ground)', color: 'var(--good)' }}
           >
             {step ? stdoutAt(result, step) : ''}
@@ -256,11 +256,11 @@ export function Watch({
 
           {crashed && result.error && (
             <div className="mt-4 rounded p-3" style={{ background: 'var(--ground)' }}>
-              <p className="label text-[10px]" style={{ color: 'var(--hot)' }}>
+              <p className="label t-label" style={{ color: 'var(--hot)' }}>
                 {result.error.type}
                 {result.error.line ? ` · line ${result.error.line}` : ''}
               </p>
-              <p className="mono mt-1.5 text-[12px]" style={{ color: 'var(--ink)' }}>
+              <p className="mono mt-1.5 t-label" style={{ color: 'var(--ink)' }}>
                 {result.error.msg}
               </p>
             </div>
@@ -283,7 +283,7 @@ export function Watch({
       )}
 
       {result.capped && (
-        <p className="label mt-3 text-[10px]" style={{ color: 'var(--hot)' }}>
+        <p className="label mt-3 t-label" style={{ color: 'var(--hot)' }}>
           Trace truncated — this ran past {steps.length.toLocaleString()} steps
         </p>
       )}
@@ -297,7 +297,7 @@ export function Watch({
               setPlaying(true)
             } else setPlaying((p) => !p)
           }}
-          className="label w-20 rounded px-3 py-2 text-[11px]"
+          className="label w-20 rounded px-3 py-2 t-label"
           style={{ background: 'var(--amber)', color: 'var(--ground)' }}
         >
           {playing ? 'Pause' : atEnd ? 'Replay' : 'Play'}
@@ -310,7 +310,7 @@ export function Watch({
               setPlaying(false)
               setI((n) => Math.max(0, n - 1))
             }}
-            className="mono flex h-11 w-11 shrink-0 items-center justify-center text-lg"
+            className="mono flex h-11 w-11 shrink-0 items-center justify-center t-lead"
             style={{ color: 'var(--dim)' }}
           >
             ◀
@@ -347,25 +347,25 @@ export function Watch({
               setPlaying(false)
               setI((n) => Math.min(steps.length - 1, n + 1))
             }}
-            className="mono flex h-11 w-11 shrink-0 items-center justify-center text-lg"
+            className="mono flex h-11 w-11 shrink-0 items-center justify-center t-lead"
             style={{ color: 'var(--dim)' }}
           >
             ▶
           </button>
         </div>
 
-        <span className="label w-20 text-right text-[11px]" style={{ color: 'var(--dim)' }}>
+        <span className="label w-20 text-right t-label" style={{ color: 'var(--dim)' }}>
           {i + 1} / {steps.length}
         </span>
       </div>
 
-      <p className="label mt-3 text-[9px]" style={{ color: 'var(--rule)' }}>
+      <p className="label mt-3 t-label" style={{ color: 'var(--rule)' }}>
         ← → to step · space to play
       </p>
 
       <button
         onClick={onDone}
-        className="label mt-6 rounded px-5 py-2.5 text-[11px]"
+        className="label mt-6 rounded px-5 py-2.5 t-label"
         style={{ border: '1px solid var(--rule)', color: 'var(--ink)' }}
       >
         Got it — next →

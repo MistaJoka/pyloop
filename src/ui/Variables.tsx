@@ -18,10 +18,10 @@ function FrameBadge({ fn, depth }: { fn: string; depth: number }) {
       className="mb-3 rounded px-2 py-1.5"
       style={{ background: 'var(--ground)', borderLeft: '2px solid var(--amber)' }}
     >
-      <span className="label text-[9px]" style={{ color: 'var(--amber)' }}>
+      <span className="label t-label" style={{ color: 'var(--amber)' }}>
         inside {fn}()
       </span>
-      <p className="mt-0.5 text-[11px]" style={{ color: 'var(--rule)' }}>
+      <p className="mt-0.5 t-label" style={{ color: 'var(--rule)' }}>
         its own variables{depth > 1 ? ` · ${depth} calls deep` : ' · the caller’s are paused, not gone'}
       </p>
     </div>
@@ -60,7 +60,7 @@ function ListLens({ lens }: { lens: Lens }) {
         })}
       </span>
       {lens.pass > 0 && (
-        <span className="label text-[9px]" style={{ color: done ? 'var(--rule)' : 'var(--amber)' }}>
+        <span className="label t-label" style={{ color: done ? 'var(--rule)' : 'var(--amber)' }}>
           {done ? 'nothing left' : `pass ${lens.pass} of ${lens.total}`}
         </span>
       )}
@@ -87,11 +87,11 @@ export function Variables({
     <div>
       {inside && <FrameBadge fn={step.fn} depth={step.depth} />}
       {names.length === 0 ? (
-        <p className="mono text-[13px]" style={{ color: 'var(--rule)' }}>
+        <p className="mono t-mono" style={{ color: 'var(--rule)' }}>
           none yet
         </p>
       ) : (
-        <div className="mono space-y-2 text-[13px]">
+        <div className="mono space-y-2 t-mono">
           {Object.entries(step.locals).map(([name, v]) => {
             const ch = changes[name]
             const lens = lenses[name]
@@ -104,7 +104,7 @@ export function Variables({
                     int vs str is the confusion behind most intro-Python errors —
                     showing it teaches that for free, on every level. */}
                 <span
-                  className="w-9 shrink-0 text-[10px] leading-6"
+                  className="w-9 shrink-0 t-label leading-6"
                   style={{ color: 'var(--rule)' }}
                 >
                   {typeLabel(v.type)}
