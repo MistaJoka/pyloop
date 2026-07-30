@@ -119,13 +119,13 @@ export function LoopShell({
       <div key={stage} className="fade-rise">
         {stage === 'concept' && (
           <div>
-            <h2 className="label text-3xl" style={{ color: 'var(--ink)' }}>
+            <h2 className="label t-title" style={{ color: 'var(--ink)' }}>
               {topic.title}
             </h2>
-            <p className="mt-1 text-lg" style={{ color: 'var(--dim)' }}>
+            <p className="mt-1 t-lead" style={{ color: 'var(--dim)' }}>
               {level.blurb}
             </p>
-            <div className="mt-5 max-w-2xl text-lg" style={{ color: 'var(--dim)' }}>
+            <div className="mt-5 max-w-2xl t-lead" style={{ color: 'var(--dim)' }}>
               <Markdown text={level.concept.body} />
             </div>
 
