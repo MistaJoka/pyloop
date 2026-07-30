@@ -133,7 +133,7 @@ export function LoopShell({
               className="mt-8 max-w-2xl rounded p-5"
               style={{ background: 'var(--panel)', borderLeft: '2px solid var(--amber)' }}
             >
-              <p className="label mb-2 text-[10px]" style={{ color: 'var(--amber)' }}>
+              <p className="label mb-2 t-label" style={{ color: 'var(--amber)' }}>
                 Why it matters for AI
               </p>
               <div style={{ color: 'var(--dim)' }}>
@@ -143,7 +143,7 @@ export function LoopShell({
 
             <button
               onClick={() => setStage('watch')}
-              className="label mt-8 rounded px-5 py-2.5 text-[11px]"
+              className="label mt-8 rounded px-5 py-2.5 t-label"
               style={{ background: 'var(--amber)', color: 'var(--ground)' }}
             >
               Watch it run →
@@ -154,12 +154,12 @@ export function LoopShell({
         {stage === 'watch' &&
           (traceFailed ? (
             <div>
-              <p className="mono text-[13px]" style={{ color: 'var(--hot)' }}>
+              <p className="mono t-mono" style={{ color: 'var(--hot)' }}>
                 Couldn't run the trace: {traceFailed}
               </p>
               <button
                 onClick={() => setStage('predict')}
-                className="label mt-6 rounded px-5 py-2.5 text-[11px]"
+                className="label mt-6 rounded px-5 py-2.5 t-label"
                 style={{ border: '1px solid var(--rule)', color: 'var(--ink)' }}
               >
                 Skip ahead →
@@ -209,7 +209,7 @@ export function LoopShell({
         )}
 
         {stage === 'build' && !level.build && (
-          <p className="mono text-[13px]" style={{ color: 'var(--hot)' }}>
+          <p className="mono t-mono" style={{ color: 'var(--hot)' }}>
             This level is missing its build content — that's a content bug, not
             yours. (verify-content should have caught this before it shipped.)
           </p>

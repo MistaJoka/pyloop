@@ -863,7 +863,7 @@ than 13px. Buttons using the `label` face keep `label` alongside `t-label`.
 
 - [ ] **Step 2: Grep for stragglers**
 
-Run: `grep -rn "text-\[1" src/ui/ src/App.tsx | grep -v t-`
+Run: `grep -rn "text-\[1" src/ui/ src/App.tsx | grep -v 't-label\|t-mono\|t-body'`
 Expected: no output (no bracketed pixel font sizes left anywhere in the UI).
 Also run: `grep -rn "text-sm\|text-lg\|text-xl\|text-3xl\|text-5xl\|text-base" src/ui/ src/App.tsx`
 Expected: no output.

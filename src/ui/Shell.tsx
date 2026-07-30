@@ -33,7 +33,7 @@ export function Shell({
       <header
         className="sticky top-0 z-10"
         style={{
-          background: 'rgba(23, 21, 15, 0.82)',
+          background: 'color-mix(in srgb, var(--ground) 82%, transparent)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
           borderBottom: '1px solid var(--rule)',

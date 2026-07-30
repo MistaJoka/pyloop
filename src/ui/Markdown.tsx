@@ -53,7 +53,7 @@ export function Markdown({ text }: { text: string }) {
           return (
             <pre
               key={bi}
-              className="mono overflow-x-auto rounded p-4 text-[13px] leading-7"
+              className="mono overflow-x-auto rounded p-4 t-mono leading-7"
               style={{ background: 'var(--panel)', color: 'var(--ink)' }}
             >
               {body}

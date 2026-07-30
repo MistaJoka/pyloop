@@ -127,7 +127,7 @@ export function TopicMap({
                         />
                       </div>
                       <p className="t-mono mt-3 truncate" style={{ color: 'var(--dim)' }}>
-                        {nextLv ? `${levelName(nextLv.level)} · ${nextLv.blurb}` : 'All five cleared'}
+                        {nextLv ? `${levelName(nextLv.level)} · ${nextLv.blurb}` : `All ${t.levels.length} cleared`}
                       </p>
                     </button>
                   )
