@@ -44,6 +44,61 @@ body {
   font-family: var(--font-mono);
 }
 
+/* Named type scale — the only font sizes components may use. `.label` and
+   `.mono` set face; these set size. Absorbs the old ad-hoc sizes:
+   text-[10px]/text-[11px] -> t-label, text-[13px]/[15px] -> t-mono,
+   text-sm/text-base -> t-body, text-lg -> t-lead, text-3xl -> t-title,
+   text-5xl -> t-display. */
+.t-label { font-size: 11px; }
+.t-mono { font-size: 13px; }
+.t-body { font-size: 1rem; }
+.t-lead { font-size: 1.125rem; }
+.t-title { font-size: 1.875rem; line-height: 1.15; }
+.t-display { font-size: 3rem; line-height: 1.05; }
+
+/* Enter animation for user-caused state changes: stage advances, panel
+   expansion, the Done heading. Never used in a loop. */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-rise {
+  animation: fade-rise 180ms ease-out;
+}
+
+/* Progress bars fill from zero once, on mount. */
+@keyframes bar-fill {
+  from {
+    width: 0;
+  }
+}
+.bar-fill {
+  animation: bar-fill 400ms ease-out;
+}
+
+/* The app's one depth treatment: resting = flat hairline; hover/focus =
+   amber-tinted border, raised background, 1px lift, soft shadow. */
+.lift {
+  transition:
+    border-color 120ms ease-out,
+    background-color 120ms ease-out,
+    transform 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+.lift:hover,
+.lift:focus-visible {
+  border-color: rgba(255, 182, 39, 0.45) !important;
+  background-color: var(--panel-hi) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
 /* A changed value flares, then cools over the following steps. */
 .heat-0 {
   color: var(--hot);
