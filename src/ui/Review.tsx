@@ -9,24 +9,15 @@ import { ReviewItem } from './ReviewItem'
 export function Review({
   progress,
   runtime,
-  onExit,
   onRecord,
 }: {
   progress: Progress
   runtime: Runtime
-  onExit: () => void
   onRecord: (topicId: string, level: LevelId, correct: boolean) => void
 }) {
   const [queue, setQueue] = useState<DueItem[] | null>(null) // null = showing the calendar
 
-  return (
-    <div>
-      <button onClick={onExit} className="label mb-6 text-[10px]" style={{ color: 'var(--dim)' }}>
-        ← Map
-      </button>
-      {renderBody()}
-    </div>
-  )
+  return <div>{renderBody()}</div>
 
   function renderBody() {
     if (queue === null) {

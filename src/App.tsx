@@ -5,6 +5,7 @@ import type { Level, LevelId } from './content/types'
 import { TopicMap } from './ui/TopicMap'
 import { LoopShell } from './ui/LoopShell'
 import { Review } from './ui/Review'
+import { Shell, type ShellMode } from './ui/Shell'
 import { completeLevel, dueOn, load, recordReview, save, today, type Progress } from './progress/store'
 
 type Open = { topicId: string; level: LevelId }
@@ -24,9 +25,22 @@ export default function App() {
 
   const topic = open ? topicById(open.topicId) : null
   const level = topic && open ? levelOf(topic, open.level) : null
+  const mode: ShellMode = topic && level ? 'loop' : reviewOpen ? 'review' : 'map'
 
   return (
-    <div className="mx-auto min-h-full max-w-4xl px-6 py-10 sm:px-10 sm:py-16">
+    <Shell
+      mode={mode}
+      status={status}
+      dueTodayCount={dueOn(progress, today()).length}
+      onMap={() => {
+        setOpen(null)
+        setReviewOpen(false)
+      }}
+      onReview={() => {
+        setOpen(null)
+        setReviewOpen(true)
+      }}
+    >
       {topic && level ? (
         <LoopShell
           topic={topic}
@@ -42,7 +56,6 @@ export default function App() {
         <Review
           progress={progress}
           runtime={runtime}
-          onExit={() => setReviewOpen(false)}
           onRecord={(topicId, lvl, correct) =>
             setProgress((p) => recordReview(p, topicId, lvl, correct))
           }
@@ -55,10 +68,6 @@ export default function App() {
           onOpenReview={() => setReviewOpen(true)}
         />
       )}
-
-      <p className="label mt-16 text-[10px]" style={{ color: 'var(--rule)' }}>
-        Python {status === 'ready' ? 'ready' : status === 'booting' ? 'warming up' : 'restarting'}
-      </p>
-    </div>
+    </Shell>
   )
 }

@@ -84,9 +84,6 @@ export function LoopShell({
     <div>
       {/* Stage rail — where you are in the seven minutes */}
       <div className="mb-3 flex items-center gap-2">
-        <button onClick={onExit} className="label mr-3 text-[10px]" style={{ color: 'var(--dim)' }}>
-          ← Map
-        </button>
         {stages.map((s) => {
           const done = stages.indexOf(s) < stages.indexOf(stage)
           const here = s === stage
