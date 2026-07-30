@@ -105,7 +105,7 @@ export function TopicMap({
                       className="lift rounded p-4 text-left"
                       style={{
                         background: 'var(--panel)',
-                        border: `1px solid ${open ? 'rgba(255, 182, 39, 0.45)' : 'var(--rule)'}`,
+                        border: `1px solid ${open ? 'color-mix(in srgb, var(--amber) 45%, transparent)' : 'var(--rule)'}`,
                       }}
                     >
                       <div className="flex items-baseline gap-2">
