@@ -30,12 +30,23 @@ export type TopicProgress = {
 
 export type DueItem = { topicId: string; level: LevelId }
 
+/** The capstone: one growing program, four checkpoints. `passed` is
+ *  monotonic — a tick records "you composed this once"; stage 4's check
+ *  re-proves the whole program anyway. `code` persists the program so the
+ *  capstone survives leaving and coming back. */
+export type CapstoneProgress = {
+  passed: 0 | 1 | 2 | 3 | 4
+  code: string
+  lastSeen: string
+}
+
 /** Records where he's been, not how well he's performing. There is deliberately
  *  no streak, score, or reward here — completion state exists so the map can
  *  answer "which rungs have I done, and which did I fudge". */
 export type Progress = {
   version: 2
   topics: Record<string, TopicProgress>
+  capstone?: CapstoneProgress
 }
 
 /** v1 stored one flat record per topic, before levels existed. */
@@ -65,7 +76,7 @@ export function load(): Progress {
     const parsed = JSON.parse(raw) as Progress | ProgressV1
     // Rebuild rather than pass through: older blobs carry a `streak` field that
     // no longer exists, and re-saving it would keep it alive forever.
-    if (parsed.version === 2) return { version: 2, topics: parsed.topics ?? {} }
+    if (parsed.version === 2) return { version: 2, topics: parsed.topics ?? {}, capstone: parsed.capstone }
     if (parsed.version === 1) return migrateV1(parsed)
     return empty()
   } catch {
@@ -210,3 +221,12 @@ export function dueOn(p: Progress, day: string): DueItem[] {
   }
   return items
 }
+
+/** Merge a patch onto the capstone record (creating it on first touch),
+ *  always restamping lastSeen. */
+export function saveCapstone(p: Progress, patch: Partial<CapstoneProgress>): Progress {
+  const prev = p.capstone ?? { passed: 0 as const, code: '', lastSeen: today() }
+  return { ...p, capstone: { ...prev, ...patch, lastSeen: today() } }
+}
+
+export const capstonePassed = (p: Progress): 0 | 1 | 2 | 3 | 4 => p.capstone?.passed ?? 0

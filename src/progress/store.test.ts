@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { completeLevel, load, needsAnotherLook, nextInterval, save, type Progress, recordReview, dueOn, today } from './store'
+import { completeLevel, load, needsAnotherLook, nextInterval, save, type Progress, recordReview, dueOn, today, saveCapstone, capstonePassed } from './store'
 
 /** Drive the clock to a specific LOCAL wall-clock moment. */
 function at(local: string) {
@@ -223,5 +223,41 @@ describe('review scheduling', () => {
   it('today() reports the local calendar day', () => {
     at('2026-07-15T20:00:00')
     expect(today()).toBe('2026-07-15')
+  })
+})
+
+describe('capstone progress', () => {
+  it('starts absent and reads as 0 passed', () => {
+    expect(capstonePassed(fresh())).toBe(0)
+  })
+
+  it('saveCapstone creates the record on first save and stamps lastSeen', () => {
+    at('2026-07-30T20:00:00')
+    const p = saveCapstone(fresh(), { code: 'grid = []' })
+    expect(p.capstone).toEqual({ passed: 0, code: 'grid = []', lastSeen: '2026-07-30' })
+  })
+
+  it('merges patches without losing the other fields', () => {
+    at('2026-07-30T20:00:00')
+    let p = saveCapstone(fresh(), { code: 'grid = []' })
+    p = saveCapstone(p, { passed: 2 })
+    expect(p.capstone?.code).toBe('grid = []')
+    expect(p.capstone?.passed).toBe(2)
+    expect(capstonePassed(p)).toBe(2)
+  })
+
+  it('round-trips through localStorage', () => {
+    at('2026-07-30T20:00:00')
+    const p = saveCapstone(fresh(), { passed: 3, code: 'def step(g): ...' })
+    save(p)
+    expect(load().capstone).toEqual(p.capstone)
+  })
+
+  it('a save from before the capstone existed loads with capstone undefined', () => {
+    localStorage.setItem(
+      'pyloop.progress.v1',
+      JSON.stringify({ version: 2, topics: { 'for-loops': { levels: {} } } }),
+    )
+    expect(load().capstone).toBeUndefined()
   })
 })
