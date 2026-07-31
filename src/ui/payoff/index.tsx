@@ -4,11 +4,13 @@ import {
   payoffValidators,
   type CipherPayoff,
   type GridHistory,
+  type LedgerPayoff,
   type TablePayoff,
   type TextGenPayoff,
 } from '../../content/capstones/payoff'
 import { CipherPlayer } from './CipherPlayer'
 import { GridPlayer } from './GridPlayer'
+import { LedgerPlayer } from './LedgerPlayer'
 import { TablePlayer } from './TablePlayer'
 import { TextGenPlayer } from './TextGenPlayer'
 
@@ -45,5 +47,11 @@ export const payoffPlayers: Partial<Record<PayoffKind, PayoffEntry>> = {
     badShapeMsg:
       'The model ran, but what it produced is not the tokens-plus-steps walk the player expects.',
     render: (v) => <TextGenPlayer payoff={v as TextGenPayoff} />,
+  },
+  ledger: {
+    validate: payoffValidators.ledger,
+    badShapeMsg:
+      'The ledger ran, but what it produced is not the steps / final / replayed statement the player expects.',
+    render: (v) => <LedgerPlayer payoff={v as LedgerPayoff} />,
   },
 }

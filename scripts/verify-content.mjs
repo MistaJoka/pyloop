@@ -180,5 +180,15 @@ for (const c of capstones) {
   }
 }
 
+// 7. The catalog-level claim: together, the capstones exercise EVERY topic on
+//    the map. This is the "entire course worth of knowledge" gate — a topic
+//    no capstone stands on is a gap in the story, and the build fails on it.
+console.log('\n### Catalog coverage')
+const covered = new Set()
+for (const c of capstones) for (const st of c.stages) for (const r of st.topicRefs ?? []) covered.add(r.topicId)
+const missing = topics.filter((t) => !covered.has(t.id)).map((t) => t.id)
+if (missing.length) bad(`catalog: topics no capstone exercises: ${missing.join(', ')}`)
+else ok(`catalog: all ${topics.length} topics exercised across ${capstones.length} capstones`)
+
 console.log(`\n${failures === 0 ? 'ALL CONTENT CHECKS PASSED' : failures + ' FAILURE(S)'}`)
 process.exit(failures ? 1 : 0)
