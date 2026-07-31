@@ -2,10 +2,11 @@ import type { Capstone, CapstoneId } from './types'
 import { life } from './life'
 import { wrangle } from './wrangle'
 import { cipher } from './cipher'
+import { markov } from './markov'
 
 /** Add a capstone here and it appears in the catalog. Nothing else to touch.
  *  Array order is display order — course-progression order, Life first. */
-export const capstones: Capstone[] = [life, wrangle, cipher]
+export const capstones: Capstone[] = [life, wrangle, cipher, markov]
 
 export const capstoneById = (id: CapstoneId) => capstones.find((c) => c.id === id)
 

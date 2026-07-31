@@ -5,10 +5,12 @@ import {
   type CipherPayoff,
   type GridHistory,
   type TablePayoff,
+  type TextGenPayoff,
 } from '../../content/capstones/payoff'
 import { CipherPlayer } from './CipherPlayer'
 import { GridPlayer } from './GridPlayer'
 import { TablePlayer } from './TablePlayer'
+import { TextGenPlayer } from './TextGenPlayer'
 
 /** One entry per payoff kind: the shared shape gate, what to say when the
  *  harness returned the wrong shape, and how to render a valid payload.
@@ -37,5 +39,11 @@ export const payoffPlayers: Partial<Record<PayoffKind, PayoffEntry>> = {
     badShapeMsg:
       'The cipher ran, but what it produced is not the message / chars / 26-candidates / cracked shape the player expects.',
     render: (v) => <CipherPlayer payoff={v as CipherPayoff} />,
+  },
+  textgen: {
+    validate: payoffValidators.textgen,
+    badShapeMsg:
+      'The model ran, but what it produced is not the tokens-plus-steps walk the player expects.',
+    render: (v) => <TextGenPlayer payoff={v as TextGenPayoff} />,
   },
 }
