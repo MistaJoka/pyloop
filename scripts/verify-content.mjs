@@ -2,13 +2,14 @@ import { loadPyodide } from 'pyodide'
 import { readFileSync } from 'node:fs'
 
 const PROJ = new URL('..', import.meta.url).pathname
-const { topics } = await import(process.env.CONTENT ?? '/tmp/pyloop-content.mjs')
+const { topics, capstone } = await import(process.env.CONTENT ?? '/tmp/pyloop-content.mjs')
 
 const py = await loadPyodide()
 py.runPython(readFileSync(`${PROJ}/src/engine/tracer.py`, 'utf8'))
 const trace = py.globals.get('trace')
 const runPlain = py.globals.get('run_plain')
 const runAsserts = py.globals.get('run_with_asserts')
+const runCollect = py.globals.get('run_collect')
 
 let failures = 0
 const bad = (msg) => { console.log(`   FAIL  ${msg}`); failures++ }
@@ -102,6 +103,49 @@ for (const topic of topics) {
       else ok(`stretch: runs, prints ${JSON.stringify(st.stdout.trim())}`)
     }
   }
+}
+
+console.log(`\n### ${capstone.title} — ${capstone.stages.length} stages`)
+const topicIds = new Set(topics.map((t) => t.id))
+for (const st of capstone.stages) {
+  console.log(`\n Stage ${st.id}: ${st.title}`)
+
+  // 1. No blank editor may pass: the check against an EMPTY program must fail.
+  const blank = JSON.parse(runAsserts('', st.check.code, ''))
+  if (blank.passed) bad(`stage ${st.id}: an empty program passes the check!`)
+  else ok(`stage ${st.id}: empty program rejected`)
+
+  // 2. The hidden solution must pass every stage's check (cumulative by
+  //    construction — the whole program runs each time).
+  const good = JSON.parse(runAsserts(capstone.solution, st.check.code, ''))
+  if (!good.passed) bad(`stage ${st.id}: the reference solution fails — ${JSON.stringify(good.error)}`)
+  else ok(`stage ${st.id}: reference solution accepted`)
+
+  // 3. Hints: at least one, and the last names a real topic (by id) so
+  //    "out of hints" always points somewhere that exists.
+  if (!st.hints.length) bad(`stage ${st.id}: no hints — the ladder is empty`)
+  else {
+    const last = st.hints[st.hints.length - 1]
+    const named = [...topicIds].some((id) => {
+      const t = topics.find((x) => x.id === id)
+      return last.toLowerCase().includes(t.title.toLowerCase())
+    })
+    if (!named) bad(`stage ${st.id}: last hint doesn't name a real topic to review`)
+    else ok(`stage ${st.id}: ${st.hints.length} hints, last one points at a real topic`)
+  }
+}
+
+// 4. The payoff: solution + harness must produce a valid, moving history.
+const col = JSON.parse(runCollect(capstone.solution, capstone.harness, ''))
+if (col.error) bad(`capstone collect errored: ${JSON.stringify(col.error)}`)
+else {
+  const h = col.value
+  const want = capstone.generations + 1
+  if (!Array.isArray(h) || h.length !== want) bad(`history should be ${want} frames (seed + ${capstone.generations}), got ${Array.isArray(h) ? h.length : typeof h}`)
+  else if (!h.every((g) => Array.isArray(g) && g.length === h[0].length && g.every((row) => Array.isArray(row) && row.length === h[0][0].length))) bad('history frames are not uniformly-shaped 2D grids')
+  else if (!h.every((g) => g.every((row) => row.every((c) => c === 0 || c === 1)))) bad('history contains cells that are not 0/1')
+  else if (JSON.stringify(h[0]) === JSON.stringify(h[1])) bad('the simulation is frozen — generation 1 is identical to the seed')
+  else ok(`capstone: ${want}-frame history, uniform grids, and the glider moves`)
 }
 
 console.log(`\n${failures === 0 ? 'ALL CONTENT CHECKS PASSED' : failures + ' FAILURE(S)'}`)
