@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import type { Capstone } from '../content/capstones/types'
+import type { Capstone, TopicRef } from '../content/capstones/types'
+import { topicById } from '../content/topics'
+import { levelName } from '../content/types'
 import type { CapstoneProgress } from '../progress/store'
 import type { Runtime } from '../engine/runtime'
 import { checkSubmission } from '../engine/check'
@@ -13,11 +15,13 @@ export function CapstoneShell({
   runtime,
   progress,
   onSave,
+  onOpenTopic,
 }: {
   capstone: Capstone
   runtime: Runtime
   progress: CapstoneProgress | undefined
   onSave: (patch: Partial<CapstoneProgress>) => void
+  onOpenTopic: (ref: TopicRef) => void
 }) {
   const passed = progress?.passed ?? 0
   const [code, setCode] = useState(progress?.code ?? '')
@@ -26,6 +30,8 @@ export function CapstoneShell({
   const [hintsShown, setHintsShown] = useState(0)
   const [payoffValue, setPayoffValue] = useState<unknown>(null)
   const [playError, setPlayError] = useState<PyError | null>(null)
+  // First visit gets the pitch; afterwards it folds to a one-line toggle.
+  const [whyOpen, setWhyOpen] = useState(() => (progress?.passed ?? 0) === 0)
 
   const payoff = payoffPlayers[capstone.payoffKind]
   const complete = passed >= 4
@@ -101,6 +107,32 @@ export function CapstoneShell({
         {capstone.blurb}
       </p>
 
+      {/* The real-world framing: same visual language as the loop's
+          "Why it matters for AI" card. */}
+      <div className="mt-6 max-w-2xl">
+        {whyOpen ? (
+          <div
+            className="rounded p-5"
+            style={{ background: 'var(--panel)', borderLeft: '2px solid var(--amber)' }}
+          >
+            <p className="label mb-2 t-label" style={{ color: 'var(--amber)' }}>
+              Why this matters
+            </p>
+            <div style={{ color: 'var(--dim)' }}>
+              <Markdown text={capstone.whyItMatters} />
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setWhyOpen(true)}
+            className="label lift rounded px-4 py-2 t-label"
+            style={{ border: '1px solid var(--rule)', color: 'var(--dim)' }}
+          >
+            Why this matters
+          </button>
+        )}
+      </div>
+
       {/* Checkpoint rail — same language as the loop's stage rail. */}
       <div className="mb-8 mt-6 flex items-center gap-2">
         {capstone.stages.map((s) => {
@@ -135,6 +167,30 @@ export function CapstoneShell({
             Checkpoint {stage.id} of 4
           </p>
           <Markdown text={stage.task} />
+
+          {/* The rungs this checkpoint stands on. Wobbling? Tap one, replay
+              the lesson, and Done brings you straight back here. */}
+          {stage.topicRefs.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="label t-label" style={{ color: 'var(--rule)' }}>
+                stands on
+              </span>
+              {stage.topicRefs.map((ref) => {
+                const t = topicById(ref.topicId)
+                return t ? (
+                  <button
+                    key={`${ref.topicId}-${ref.level}`}
+                    onClick={() => onOpenTopic(ref)}
+                    title="Replay this rung — you'll land back here after"
+                    className="label lift rounded px-2.5 py-1 t-label"
+                    style={{ border: '1px solid var(--rule)', color: 'var(--dim)' }}
+                  >
+                    {t.title} · {levelName(ref.level)}
+                  </button>
+                ) : null
+              })}
+            </div>
+          )}
         </div>
       )}
 

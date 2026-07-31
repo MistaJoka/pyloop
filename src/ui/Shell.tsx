@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { RuntimeStatus } from '../engine/runtime'
 
-export type ShellMode = 'map' | 'review' | 'loop' | 'capstone'
+export type ShellMode = 'map' | 'review' | 'loop' | 'capstones' | 'capstone'
 
 const STATUS: Record<RuntimeStatus, { color: string; text: string }> = {
   ready: { color: 'var(--good)', text: 'python ready' },
@@ -18,6 +18,7 @@ export function Shell({
   dueTodayCount,
   onMap,
   onReview,
+  onCapstones,
   children,
 }: {
   mode: ShellMode
@@ -25,6 +26,7 @@ export function Shell({
   dueTodayCount: number
   onMap: () => void
   onReview: () => void
+  onCapstones: () => void
   children: ReactNode
 }) {
   const s = STATUS[status]
@@ -50,6 +52,16 @@ export function Shell({
               style={{ color: mode === 'map' ? 'var(--amber)' : 'var(--dim)' }}
             >
               Map
+            </button>
+            <button
+              onClick={onCapstones}
+              className="label t-label"
+              style={{
+                color:
+                  mode === 'capstones' || mode === 'capstone' ? 'var(--amber)' : 'var(--dim)',
+              }}
+            >
+              Capstones
             </button>
             <button
               onClick={onReview}

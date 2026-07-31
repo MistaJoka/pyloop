@@ -8,12 +8,15 @@ export function Done({
   nextLevel,
   onBackToMap,
   onNextLevel,
+  exitLabel,
 }: {
   topic: Topic
   level: Level
   nextLevel: Level | null
   onBackToMap: () => void
   onNextLevel: (next: Level) => void
+  /** Overridden when a capstone sent us here, so the button reads honestly. */
+  exitLabel?: string
 }) {
   const [openStretch, setOpenStretch] = useState(false)
   const topped = nextLevel === null
@@ -89,7 +92,7 @@ export function Done({
         className="label lift mt-8 rounded px-5 py-2.5 t-label"
         style={{ border: '1px solid var(--rule)', color: 'var(--ink)' }}
       >
-        ← Back to the map
+        {exitLabel ?? '← Back to the map'}
       </button>
     </div>
   )

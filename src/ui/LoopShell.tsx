@@ -30,6 +30,7 @@ export function LoopShell({
   onComplete,
   onExit,
   onNextLevel,
+  exitLabel,
 }: {
   topic: Topic
   level: Level
@@ -37,6 +38,9 @@ export function LoopShell({
   onComplete: (outcome: { predictCorrect: boolean; assisted: boolean }) => void
   onExit: () => void
   onNextLevel: (next: Level) => void
+  /** Where Done's back button says it goes — "← Back to the map" unless a
+   *  capstone sent us here. */
+  exitLabel?: string
 }) {
   const [stage, setStage] = useState<Stage>('concept')
   const [trace, setTrace] = useState<TraceResult | null>(null)
@@ -222,6 +226,7 @@ export function LoopShell({
             nextLevel={nextInTopic}
             onBackToMap={onExit}
             onNextLevel={onNextLevel}
+            exitLabel={exitLabel}
           />
         )}
       </div>

@@ -35,15 +35,15 @@ export function TopicMap({
   onPick,
   dueTodayCount,
   onOpenReview,
-  capstonePassedCount,
-  onOpenCapstone,
+  capstoneTotals,
+  onOpenCapstones,
 }: {
   progress: Progress
   onPick: (topicId: string, level: LevelId) => void
   dueTodayCount: number
   onOpenReview: () => void
-  capstonePassedCount: number
-  onOpenCapstone: () => void
+  capstoneTotals: { passed: number; total: number }
+  onOpenCapstones: () => void
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const resume = firstUnfinished(progress)
@@ -201,16 +201,17 @@ export function TopicMap({
         })}
       </div>
 
-      {/* The capstone: its own thing, below the ladder, open from day one. */}
+      {/* The capstones live on their own page; this is the wayfinding sign,
+          below the ladder, open from day one. */}
       <button
-        onClick={onOpenCapstone}
+        onClick={onOpenCapstones}
         className="lift mt-8 w-full rounded p-5 text-left"
         style={{
           background: 'var(--panel)',
           border: `1px solid ${
-            capstonePassedCount >= 4
+            capstoneTotals.passed >= capstoneTotals.total
               ? 'var(--good)'
-              : capstonePassedCount > 0
+              : capstoneTotals.passed > 0
                 ? 'color-mix(in srgb, var(--amber) 45%, transparent)'
                 : 'var(--rule)'
           }`,
@@ -218,15 +219,15 @@ export function TopicMap({
       >
         <div className="flex items-baseline gap-3">
           <span className="label t-label" style={{ color: 'var(--amber)' }}>
-            The Capstone
+            Capstones
           </span>
           <span className="label ml-auto t-label" style={{ color: 'var(--dim)' }}>
-            {capstonePassedCount}/4
+            {capstoneTotals.passed}/{capstoneTotals.total} checkpoints
           </span>
         </div>
         <p className="t-lead mt-1.5" style={{ color: 'var(--ink)' }}>
-          Build a world that runs itself — Conway's Game of Life, then watch your own code
-          walk a glider across the screen.
+          Whole programs built from everything on this map — and each one shows you which
+          rungs it stands on →
         </p>
       </button>
 
