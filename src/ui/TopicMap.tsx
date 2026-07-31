@@ -35,11 +35,15 @@ export function TopicMap({
   onPick,
   dueTodayCount,
   onOpenReview,
+  capstonePassedCount,
+  onOpenCapstone,
 }: {
   progress: Progress
   onPick: (topicId: string, level: LevelId) => void
   dueTodayCount: number
   onOpenReview: () => void
+  capstonePassedCount: number
+  onOpenCapstone: () => void
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const resume = firstUnfinished(progress)
@@ -196,6 +200,35 @@ export function TopicMap({
           )
         })}
       </div>
+
+      {/* The capstone: its own thing, below the ladder, open from day one. */}
+      <button
+        onClick={onOpenCapstone}
+        className="lift mt-8 w-full rounded p-5 text-left"
+        style={{
+          background: 'var(--panel)',
+          border: `1px solid ${
+            capstonePassedCount >= 4
+              ? 'var(--good)'
+              : capstonePassedCount > 0
+                ? 'color-mix(in srgb, var(--amber) 45%, transparent)'
+                : 'var(--rule)'
+          }`,
+        }}
+      >
+        <div className="flex items-baseline gap-3">
+          <span className="label t-label" style={{ color: 'var(--amber)' }}>
+            The Capstone
+          </span>
+          <span className="label ml-auto t-label" style={{ color: 'var(--dim)' }}>
+            {capstonePassedCount}/4
+          </span>
+        </div>
+        <p className="t-lead mt-1.5" style={{ color: 'var(--ink)' }}>
+          Build a world that runs itself — Conway's Game of Life, then watch your own code
+          walk a glider across the screen.
+        </p>
+      </button>
 
       <p className="t-body mt-12 max-w-lg" style={{ color: 'var(--rule)' }}>
         Nothing is locked. If Beginner insults you, jump to Advanced — the ladder is a

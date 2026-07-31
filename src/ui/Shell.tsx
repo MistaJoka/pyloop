@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { RuntimeStatus } from '../engine/runtime'
 
-export type ShellMode = 'map' | 'review' | 'loop'
+export type ShellMode = 'map' | 'review' | 'loop' | 'capstone'
 
 const STATUS: Record<RuntimeStatus, { color: string; text: string }> = {
   ready: { color: 'var(--good)', text: 'python ready' },

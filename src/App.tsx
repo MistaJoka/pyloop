@@ -5,8 +5,19 @@ import type { Level, LevelId } from './content/types'
 import { TopicMap } from './ui/TopicMap'
 import { LoopShell } from './ui/LoopShell'
 import { Review } from './ui/Review'
+import { CapstoneShell } from './ui/CapstoneShell'
 import { Shell, type ShellMode } from './ui/Shell'
-import { completeLevel, dueOn, load, recordReview, save, today, type Progress } from './progress/store'
+import {
+  capstonePassed,
+  completeLevel,
+  dueOn,
+  load,
+  recordReview,
+  save,
+  saveCapstone,
+  today,
+  type Progress,
+} from './progress/store'
 
 type Open = { topicId: string; level: LevelId }
 
@@ -18,6 +29,7 @@ export default function App() {
   const [progress, setProgress] = useState<Progress>(() => load())
   const [open, setOpen] = useState<Open | null>(null)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [capstoneOpen, setCapstoneOpen] = useState(false)
 
   useEffect(() => {
     save(progress)
@@ -25,7 +37,8 @@ export default function App() {
 
   const topic = open ? topicById(open.topicId) : null
   const level = topic && open ? levelOf(topic, open.level) : null
-  const mode: ShellMode = topic && level ? 'loop' : reviewOpen ? 'review' : 'map'
+  const mode: ShellMode =
+    topic && level ? 'loop' : reviewOpen ? 'review' : capstoneOpen ? 'capstone' : 'map'
 
   return (
     <Shell
@@ -35,10 +48,12 @@ export default function App() {
       onMap={() => {
         setOpen(null)
         setReviewOpen(false)
+        setCapstoneOpen(false)
       }}
       onReview={() => {
         setOpen(null)
         setReviewOpen(true)
+        setCapstoneOpen(false)
       }}
     >
       {topic && level ? (
@@ -60,12 +75,20 @@ export default function App() {
             setProgress((p) => recordReview(p, topicId, lvl, correct))
           }
         />
+      ) : capstoneOpen ? (
+        <CapstoneShell
+          runtime={runtime}
+          progress={progress.capstone}
+          onSave={(patch) => setProgress((p) => saveCapstone(p, patch))}
+        />
       ) : (
         <TopicMap
           progress={progress}
           onPick={(topicId, lvl) => setOpen({ topicId, level: lvl })}
           dueTodayCount={dueOn(progress, today()).length}
           onOpenReview={() => setReviewOpen(true)}
+          capstonePassedCount={capstonePassed(progress)}
+          onOpenCapstone={() => setCapstoneOpen(true)}
         />
       )}
     </Shell>
