@@ -103,14 +103,20 @@ def _depth(frame):
     return d
 
 
-def _guard():
-    """A step cap for the UNTRACED paths (run_plain / run_with_asserts).
+def _guard(limit=MAX_STEPS):
+    """A step cap for the UNTRACED paths (run_plain / run_with_asserts /
+    run_collect).
 
     Those paths had no cap and no timeout of their own. In the browser the 10s
     worker kill covers it, but verify-content runs in Node with no worker — so a
     single infinite `fix.brokenCode` would hang the build forever rather than
     fail it. This counts lines and nothing else (no snapshots), so it's cheap,
     and it turns a runaway into an instant honest message instead of a 10s stall.
+
+    `limit` exists for run_collect: a legitimate 40-generation simulation
+    executes ~220k user line events, so the collect path uses a 2,000,000
+    cap — still an honest runaway stop, ~20x above any real capstone run,
+    but far above MAX_STEPS. Do not collapse this back to one constant.
     """
     state = {"n": 0, "capped": False}
 
@@ -119,7 +125,7 @@ def _guard():
             return None
         if event == "line":
             state["n"] += 1
-            if state["n"] > MAX_STEPS:
+            if state["n"] > limit:
                 state["capped"] = True
                 raise _StepCap()
         return counter
@@ -297,3 +303,50 @@ def run_with_asserts(code, assert_code, stdin=""):
     if state["capped"]:
         passed, error = False, RUNAWAY
     return json.dumps({"passed": passed, "stdout": out.value(), "error": error})
+
+
+COLLECT_LIMIT = 2_000_000
+
+
+def run_collect(code, collect_code, stdin=""):
+    """Run user code, then a harness snippet in the same namespace, and
+    return whatever the harness assigned to __collect__ — as structured
+    JSON, not scraped stdout.
+
+    The harness is content, not engine: this function knows nothing about
+    grids or generations. It only promises: same namespace, __collect__
+    must be JSON-serializable, errors carry a line when they have one.
+    """
+    out = _Out()
+    real_stdout, real_stdin = sys.stdout, sys.stdin
+    ns = {"__name__": "__main__"}
+    error = None
+    value = None
+    try:
+        compiled = compile(code, FILENAME, "exec")
+    except SyntaxError as e:
+        return json.dumps({"value": None, "stdout": "", "error": _error_at(e)})
+    sys.stdout, sys.stdin = out, io.StringIO(stdin)
+    state, counter = _guard(COLLECT_LIMIT)
+    try:
+        with _Sandbox():
+            sys.settrace(counter)
+            exec(compiled, ns)
+            exec(compile(collect_code, "<collect>", "exec"), ns)
+            sys.settrace(None)
+            value = ns.get("__collect__")
+            json.dumps(value)  # prove serializable now, inside the try
+    except _StepCap:
+        pass
+    except TypeError as e:
+        error = {"type": "TypeError", "msg": "__collect__ was not JSON-serializable: " + str(e), "line": None}
+        value = None
+    except BaseException as e:
+        error = _error_at(e)
+        value = None
+    finally:
+        sys.settrace(None)
+        sys.stdout, sys.stdin = real_stdout, real_stdin
+    if state["capped"]:
+        error, value = RUNAWAY, None
+    return json.dumps({"value": value, "stdout": out.value(), "error": error})

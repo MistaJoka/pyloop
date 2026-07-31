@@ -55,6 +55,14 @@ export type CheckResult = {
   error: PyError | null
 }
 
+/** Result of the `collect` kind: run user code, then a content-supplied
+ *  harness, and hand back whatever the harness assigned to __collect__. */
+export type CollectResult = {
+  value: unknown
+  stdout: string
+  error: PyError | null
+}
+
 /** How a FIX submission gets judged. Declared per topic, in content. */
 export type Check =
   | { kind: 'asserts'; code: string }
@@ -64,6 +72,7 @@ export type WorkerRequest =
   | { id: number; kind: 'trace'; code: string; stdin: string }
   | { id: number; kind: 'run'; code: string; stdin: string }
   | { id: number; kind: 'asserts'; code: string; assertCode: string; stdin: string }
+  | { id: number; kind: 'collect'; code: string; collectCode: string; stdin: string }
 
 export type WorkerResponse =
   | { id: number; ok: true; data: unknown }

@@ -6,12 +6,14 @@ import { fileURLToPath } from 'node:url'
 // Real Pyodide — the tracer's whole job is to behave correctly under it.
 let trace: (code: string, stdin?: string) => string
 let runAsserts: (code: string, checks: string) => string
+let runCollect: (code: string, collectCode: string, stdin?: string) => string
 
 beforeAll(async () => {
   const py = await loadPyodide()
   py.runPython(readFileSync(fileURLToPath(new URL('./tracer.py', import.meta.url)), 'utf8'))
   trace = py.globals.get('trace')
   runAsserts = py.globals.get('run_with_asserts')
+  runCollect = py.globals.get('run_collect')
 }, 120_000)
 
 const T = (code: string) => JSON.parse(trace(code))
@@ -254,4 +256,86 @@ describe('caught vs fatal exceptions', () => {
     const r = T('x = int("abc")')
     expect(r.error).toMatchObject({ type: 'ValueError', line: 1 })
   })
+})
+
+describe('run_collect', () => {
+  const C = (code: string, collect: string) => JSON.parse(runCollect(code, collect))
+
+  it('returns the JSON value the collect code assigned to __collect__', () => {
+    const r = C('def double(n):\n    return n * 2', '__collect__ = [double(i) for i in range(4)]')
+    expect(r.error).toBeNull()
+    expect(r.value).toEqual([0, 2, 4, 6])
+  })
+
+  it('captures stdout from the user code alongside the value', () => {
+    const r = C('print("hi")\nx = 1', '__collect__ = x')
+    expect(r.stdout).toBe('hi\n')
+    expect(r.value).toBe(1)
+  })
+
+  it('an error in USER code surfaces with its line, value null', () => {
+    const r = C('x = 1\ny = 1 / 0', '__collect__ = x')
+    expect(r.value).toBeNull()
+    expect(r.error.type).toBe('ZeroDivisionError')
+    expect(r.error.line).toBe(2)
+  })
+
+  it('an error in COLLECT code surfaces too (the harness calling a broken step)', () => {
+    const r = C('def step(g):\n    return g[999]', '__collect__ = step([1, 2])')
+    expect(r.value).toBeNull()
+    expect(r.error.type).toBe('IndexError')
+  })
+
+  it('a non-serializable __collect__ is an error, not a crash', () => {
+    const r = C('f = open', '__collect__ = f')
+    expect(r.value).toBeNull()
+    expect(r.error.type).toBe('TypeError')
+  })
+
+  it('a runaway user loop is capped and reported as Runaway', () => {
+    const r = C('while True:\n    x = 1', '__collect__ = 1')
+    expect(r.value).toBeNull()
+    expect(r.error.type).toBe('Runaway')
+  })
+
+  it('survives a real 40-generation Life run without tripping the cap', () => {
+    // ~220k user line events — this is the whole reason collect has its own
+    // 2M cap instead of MAX_STEPS. If someone "tidies" that, this fails.
+    const life = `
+grid = [[0]*10 for _ in range(10)]
+for r, c in [(0,1),(1,2),(2,0),(2,1),(2,2)]:
+    grid[r][c] = 1
+
+def count_neighbors(grid, row, col):
+    count = 0
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            if dr == 0 and dc == 0:
+                continue
+            r, c = row + dr, col + dc
+            if 0 <= r < len(grid) and 0 <= c < len(grid[0]):
+                count += grid[r][c]
+    return count
+
+def next_state(alive, count):
+    if alive == 1:
+        return 1 if count in (2, 3) else 0
+    return 1 if count == 3 else 0
+
+def step(grid):
+    return [[next_state(grid[r][c], count_neighbors(grid, r, c)) for c in range(len(grid[0]))] for r in range(len(grid))]
+`
+    const harness = `
+__g = [row[:] for row in grid]
+__hist = [[row[:] for row in __g]]
+for _ in range(40):
+    __g = step(__g)
+    __hist.append([row[:] for row in __g])
+__collect__ = __hist
+`
+    const r = C(life, harness)
+    expect(r.error).toBeNull()
+    expect(r.value).toHaveLength(41)
+    expect(r.value[0]).not.toEqual(r.value[1]) // the glider actually moved
+  }, 30_000)
 })

@@ -40,6 +40,8 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       raw = pyodide.globals.get('trace')(req.code, req.stdin)
     } else if (req.kind === 'run') {
       raw = pyodide.globals.get('run_plain')(req.code, req.stdin)
+    } else if (req.kind === 'collect') {
+      raw = pyodide.globals.get('run_collect')(req.code, req.collectCode, req.stdin)
     } else {
       raw = pyodide.globals.get('run_with_asserts')(req.code, req.assertCode, req.stdin)
     }

@@ -1,6 +1,6 @@
 import {
   RunawayError,
-  type CheckResult, type DistOmit, type RunResult, type TraceResult,
+  type CheckResult, type CollectResult, type DistOmit, type RunResult, type TraceResult,
   type WorkerRequest, type WorkerResponse,
 } from './types'
 
@@ -131,5 +131,11 @@ export class Runtime {
 
   checkAsserts(code: string, assertCode: string, stdin = '') {
     return this.send<CheckResult>({ kind: 'asserts', code, assertCode, stdin })
+  }
+
+  /** Run code, then a collect harness, and get back structured data.
+   *  Same timeout/restart semantics as every other call. */
+  collect(code: string, collectCode: string, stdin = '') {
+    return this.send<CollectResult>({ kind: 'collect', code, collectCode, stdin })
   }
 }
