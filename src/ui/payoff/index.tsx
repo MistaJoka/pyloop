@@ -2,9 +2,11 @@ import type { ReactNode } from 'react'
 import type { PayoffKind } from '../../content/capstones/types'
 import {
   payoffValidators,
+  type CipherPayoff,
   type GridHistory,
   type TablePayoff,
 } from '../../content/capstones/payoff'
+import { CipherPlayer } from './CipherPlayer'
 import { GridPlayer } from './GridPlayer'
 import { TablePlayer } from './TablePlayer'
 
@@ -29,5 +31,11 @@ export const payoffPlayers: Partial<Record<PayoffKind, PayoffEntry>> = {
     badShapeMsg:
       'The pipeline ran, but what it produced is not the raw-lines / verdicts / rows / stats shape the player expects.',
     render: (v) => <TablePlayer payoff={v as TablePayoff} />,
+  },
+  cipher: {
+    validate: payoffValidators.cipher,
+    badShapeMsg:
+      'The cipher ran, but what it produced is not the message / chars / 26-candidates / cracked shape the player expects.',
+    render: (v) => <CipherPlayer payoff={v as CipherPayoff} />,
   },
 }
