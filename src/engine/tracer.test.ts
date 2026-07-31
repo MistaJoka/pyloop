@@ -292,6 +292,14 @@ describe('run_collect', () => {
     expect(r.error.type).toBe('TypeError')
   })
 
+  it('a TypeError in USER code keeps its real message and line — not mislabeled as serialization', () => {
+    const r = C('x = 1\ny = 1 + "x"', '__collect__ = x')
+    expect(r.value).toBeNull()
+    expect(r.error.type).toBe('TypeError')
+    expect(r.error.line).toBe(2)
+    expect(r.error.msg).not.toContain('JSON-serializable')
+  })
+
   it('a runaway user loop is capped and reported as Runaway', () => {
     const r = C('while True:\n    x = 1', '__collect__ = 1')
     expect(r.value).toBeNull()

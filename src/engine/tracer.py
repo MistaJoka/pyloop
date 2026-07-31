@@ -335,12 +335,13 @@ def run_collect(code, collect_code, stdin=""):
             exec(compile(collect_code, "<collect>", "exec"), ns)
             sys.settrace(None)
             value = ns.get("__collect__")
-            json.dumps(value)  # prove serializable now, inside the try
+            try:
+                json.dumps(value)
+            except TypeError as e:
+                error = {"type": "TypeError", "msg": "__collect__ was not JSON-serializable: " + str(e), "line": None}
+                value = None
     except _StepCap:
         pass
-    except TypeError as e:
-        error = {"type": "TypeError", "msg": "__collect__ was not JSON-serializable: " + str(e), "line": None}
-        value = None
     except BaseException as e:
         error = _error_at(e)
         value = None
