@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { completeLevel, load, needsAnotherLook, nextInterval, save, type Progress, recordReview, dueOn, today, saveCapstone, capstonePassed } from './store'
+import { completeLevel, load, needsAnotherLook, nextInterval, save, type Progress, recordReview, dueOn, today, saveCapstone, capstonePassed, capstoneTotals } from './store'
 
 /** Drive the clock to a specific LOCAL wall-clock moment. */
 function at(local: string) {
@@ -12,7 +12,7 @@ afterEach(() => {
   localStorage.clear()
 })
 
-const fresh = (): Progress => ({ version: 2, topics: {} })
+const fresh = (): Progress => ({ version: 3, topics: {}, capstones: {} })
 
 describe('completeLevel', () => {
   it('records a cleared level', () => {
@@ -85,7 +85,7 @@ describe('persistence', () => {
     expect(load()).toEqual(p)
   })
 
-  it('migrates v1, keeping a cleared topic as Beginner', () => {
+  it('migrates v1 all the way to v3, keeping a cleared topic as Beginner', () => {
     localStorage.setItem(
       'pyloop.progress.v1',
       JSON.stringify({
@@ -97,9 +97,35 @@ describe('persistence', () => {
       }),
     )
     const p = load()
-    expect(p.version).toBe(2)
+    expect(p.version).toBe(3)
     expect(p.topics['for-loops'].levels[1]?.completed).toBe(true)
+    expect(p.capstones).toEqual({})
     expect(p).not.toHaveProperty('streak')
+  })
+
+  it('migrates a v2 blob with capstone progress to capstones.life', () => {
+    localStorage.setItem(
+      'pyloop.progress.v1',
+      JSON.stringify({
+        version: 2,
+        topics: { 'for-loops': { levels: {} } },
+        capstone: { passed: 3, code: 'grid = []', lastSeen: '2026-07-30' },
+      }),
+    )
+    const p = load()
+    expect(p.version).toBe(3)
+    expect(p.capstones.life).toEqual({ passed: 3, code: 'grid = []', lastSeen: '2026-07-30' })
+    expect(p).not.toHaveProperty('capstone')
+  })
+
+  it('migrates a v2 blob without capstone progress to an empty capstones map', () => {
+    localStorage.setItem(
+      'pyloop.progress.v1',
+      JSON.stringify({ version: 2, topics: { 'for-loops': { levels: {} } } }),
+    )
+    const p = load()
+    expect(p.version).toBe(3)
+    expect(p.capstones).toEqual({})
   })
 
   it('drops a leftover streak field from older v2 blobs', () => {
@@ -199,7 +225,7 @@ describe('review scheduling', () => {
 
   it('dueOn excludes a level with no nextReviewDue at all (pre-Review save)', () => {
     const p: Progress = {
-      version: 2,
+      version: 3,
       topics: {
         'for-loops': {
           levels: {
@@ -207,6 +233,7 @@ describe('review scheduling', () => {
           },
         },
       },
+      capstones: {},
     }
     expect(dueOn(p, '2099-01-01')).toEqual([])
   })
@@ -228,45 +255,48 @@ describe('review scheduling', () => {
 
 describe('capstone progress', () => {
   it('starts absent and reads as 0 passed', () => {
-    expect(capstonePassed(fresh())).toBe(0)
+    expect(capstonePassed(fresh(), 'life')).toBe(0)
   })
 
   it('saveCapstone creates the record on first save and stamps lastSeen', () => {
     at('2026-07-30T20:00:00')
-    const p = saveCapstone(fresh(), { code: 'grid = []' })
-    expect(p.capstone).toEqual({ passed: 0, code: 'grid = []', lastSeen: '2026-07-30' })
+    const p = saveCapstone(fresh(), 'life', { code: 'grid = []' })
+    expect(p.capstones.life).toEqual({ passed: 0, code: 'grid = []', lastSeen: '2026-07-30' })
   })
 
   it('merges patches without losing the other fields', () => {
     at('2026-07-30T20:00:00')
-    let p = saveCapstone(fresh(), { code: 'grid = []' })
+    let p = saveCapstone(fresh(), 'life', { code: 'grid = []' })
     at('2026-07-31T09:00:00')
-    p = saveCapstone(p, { passed: 2 })
-    expect(p.capstone?.code).toBe('grid = []')
-    expect(p.capstone?.passed).toBe(2)
-    expect(capstonePassed(p)).toBe(2)
-    expect(p.capstone?.lastSeen).toBe('2026-07-31')
+    p = saveCapstone(p, 'life', { passed: 2 })
+    expect(p.capstones.life?.code).toBe('grid = []')
+    expect(p.capstones.life?.passed).toBe(2)
+    expect(capstonePassed(p, 'life')).toBe(2)
+    expect(p.capstones.life?.lastSeen).toBe('2026-07-31')
   })
 
   it('does not let a lower passed value regress the high-water mark', () => {
     at('2026-07-30T20:00:00')
-    let p = saveCapstone(fresh(), { passed: 3 })
-    p = saveCapstone(p, { passed: 1 })
-    expect(p.capstone?.passed).toBe(3)
+    let p = saveCapstone(fresh(), 'life', { passed: 3 })
+    p = saveCapstone(p, 'life', { passed: 1 })
+    expect(p.capstones.life?.passed).toBe(3)
+  })
+
+  it('keeps two capstones’ progress apart', () => {
+    at('2026-07-30T20:00:00')
+    let p = saveCapstone(fresh(), 'life', { passed: 3, code: 'def step(g): ...' })
+    p = saveCapstone(p, 'wrangle', { passed: 1, code: 'RAW = ...' })
+    expect(p.capstones.life?.passed).toBe(3)
+    expect(p.capstones.life?.code).toBe('def step(g): ...')
+    expect(p.capstones.wrangle?.passed).toBe(1)
+    expect(capstoneTotals(p, ['life', 'wrangle']).passed).toBe(4)
+    expect(capstoneTotals(p, ['life', 'wrangle']).total).toBe(8)
   })
 
   it('round-trips through localStorage', () => {
     at('2026-07-30T20:00:00')
-    const p = saveCapstone(fresh(), { passed: 3, code: 'def step(g): ...' })
+    const p = saveCapstone(fresh(), 'life', { passed: 3, code: 'def step(g): ...' })
     save(p)
-    expect(load().capstone).toEqual(p.capstone)
-  })
-
-  it('a save from before the capstone existed loads with capstone undefined', () => {
-    localStorage.setItem(
-      'pyloop.progress.v1',
-      JSON.stringify({ version: 2, topics: { 'for-loops': { levels: {} } } }),
-    )
-    expect(load().capstone).toBeUndefined()
+    expect(load().capstones.life).toEqual(p.capstones.life)
   })
 })

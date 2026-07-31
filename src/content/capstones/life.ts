@@ -1,36 +1,23 @@
-import type { Check } from '../engine/types'
+import type { Capstone } from './types'
 
-export type CapstoneStage = {
-  id: 1 | 2 | 3 | 4
-  title: string
-  /** What to write, as markdown. Includes any literal data the stage needs. */
-  task: string
-  /** Runs against the learner's WHOLE program — checks are cumulative by
-   *  construction. */
-  check: Check
-  /** Fix-style ladder. The LAST hint names the topic · rung to review —
-   *  there is no solution reveal in the capstone. */
-  hints: string[]
-}
-
-export type Capstone = {
-  title: string
-  blurb: string
-  stages: CapstoneStage[]
-  /** Runs after stage 4 passes, in the same namespace as the learner's
-   *  program; must assign the 41-frame history to __collect__. */
-  harness: string
-  generations: number
-  /** Reference program satisfying all four checks. verify-content only —
-   *  never surfaced in the UI. */
-  solution: string
-  stretches: { title: string; body: string; code?: string }[]
-}
-
-export const capstone: Capstone = {
-  title: 'The Capstone',
+export const life: Capstone = {
+  id: 'life',
+  title: 'The Game of Life',
   blurb: 'Build a world that runs itself — Conway\'s Game of Life, from an empty grid to a glider walking across your screen.',
-  generations: 40,
+  whyItMatters: `Every cell follows one tiny rule, and no cell can see the whole board — yet
+gliders walk, blinkers tick, and whole structures live and die. That's
+**emergence**: global behavior nobody wrote, falling out of local rules
+everybody follows.
+
+It's also the founding intuition of the field you're headed toward. A neural
+network is a huge pile of tiny units each doing something trivial; what the
+network *does* lives nowhere in particular, the way the glider lives in no
+single cell. Build the rule once, step it forty times, and you've touched the
+idea that makes complex systems — and AI — worth studying.`,
+  payoffKind: 'grid',
+  payoffLabel: 'Your world, 40 generations',
+  placeholder: 'One program, built in four pieces. Start with the grid.',
+  runCta: 'Run the world',
 
   stages: [
     {
@@ -61,6 +48,7 @@ assert live == {(0, 1), (1, 2), (2, 0), (2, 1), (2, 2)}, f"The glider isn't wher
         'Careful building 10 rows: `[[0]*10]*10` makes ten names for ONE row — change one cell and the whole column lights up. Build each row fresh: `[[0]*10 for _ in range(10)]`.',
         'Then flip the five cells one assignment at a time: `grid[0][1] = 1`, and so on. If nested lists still fight you, replay **lists and tuples · Advanced** — this stage stands on exactly that ground.',
       ],
+      topicRefs: [{ topicId: 'lists-and-tuples', level: 4 }],
     },
     {
       id: 2,
@@ -91,6 +79,7 @@ assert count_neighbors([[1]], 0, 0) == 0, "On a 1x1 grid the only cell has zero 
         'Guard the edges: only read `grid[r][c]` when `0 <= r < len(grid)` and `0 <= c < len(grid[0])`. An off-grid position simply adds nothing.',
         'Skip the center with `if dr == 0 and dc == 0: continue`, otherwise add `grid[row+dr][col+dc]` (alive cells are 1, so summing counts them). If the nested loops themselves are the wall, **for loops · Advanced** is this exact shape.',
       ],
+      topicRefs: [{ topicId: 'for-loops', level: 4 }],
     },
     {
       id: 3,
@@ -122,6 +111,7 @@ assert next_state(0, 0) == 0 and next_state(1, 0) == 0, "Isolation: nothing live
         'Alive: return 1 only when count is 2 or 3. Dead: return 1 only when count is exactly 3. Everything else returns 0.',
         'No loops here at all — pure if/elif/else on two inputs. If the branching feels slippery, **conditionals · Fluent** is the rung to replay.',
       ],
+      topicRefs: [{ topicId: 'conditionals', level: 3 }],
     },
     {
       id: 4,
@@ -150,6 +140,7 @@ assert live2 == {(1, 0), (1, 2), (2, 1), (2, 2), (3, 1)}, f"One step of the glid
         'For every position: the new value is `next_state(grid[r][c], count_neighbors(grid, r, c))`. Your stages 2 and 3 do all the real work — this stage just asks them a hundred times.',
         'Nested loops appending row by row works; so does one list comprehension over rows and columns. If building-a-new-list-from-an-old-one is the sticking point, **for loops · Master** covers exactly that collapse.',
       ],
+      topicRefs: [{ topicId: 'for-loops', level: 5 }],
     },
   ],
 
@@ -159,6 +150,11 @@ for _ in range(40):
     __g = step(__g)
     __hist.append([row[:] for row in __g])
 __collect__ = __hist`,
+
+  payoffAsserts: `assert isinstance(__collect__, list) and len(__collect__) == 41, f"expected 41 frames (seed + 40 generations), got {len(__collect__) if isinstance(__collect__, list) else type(__collect__).__name__}"
+assert all(isinstance(g, list) and len(g) == 10 and all(isinstance(row, list) and len(row) == 10 for row in g) for g in __collect__), "frames must be uniform 10x10 grids"
+assert all(c in (0, 1) for g in __collect__ for row in g for c in row), "cells must be 0 or 1"
+assert __collect__[1] != __collect__[0], "the simulation is frozen — generation 1 is identical to the seed"`,
 
   solution: `grid = [[0] * 10 for _ in range(10)]
 for r, c in [(0, 1), (1, 2), (2, 0), (2, 1), (2, 2)]:

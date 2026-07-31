@@ -2,7 +2,7 @@ import { loadPyodide } from 'pyodide'
 import { readFileSync } from 'node:fs'
 
 const PROJ = new URL('..', import.meta.url).pathname
-const { topics, capstone } = await import(process.env.CONTENT ?? '/tmp/pyloop-content.mjs')
+const { topics, capstones, payoffValidators } = await import(process.env.CONTENT ?? '/tmp/pyloop-content.mjs')
 
 const py = await loadPyodide()
 py.runPython(readFileSync(`${PROJ}/src/engine/tracer.py`, 'utf8'))
@@ -105,47 +105,79 @@ for (const topic of topics) {
   }
 }
 
-console.log(`\n### ${capstone.title} — ${capstone.stages.length} stages`)
-const topicIds = new Set(topics.map((t) => t.id))
-for (const st of capstone.stages) {
-  console.log(`\n Stage ${st.id}: ${st.title}`)
+console.log(`\n### Capstones — ${capstones.length}`)
+const seenIds = new Set()
+for (const c of capstones) {
+  console.log(`\n## ${c.title} (${c.id})`)
+  const stdin = c.stdin ?? ''
 
-  // 1. No blank editor may pass: the check against an EMPTY program must fail.
-  const blank = JSON.parse(runAsserts('', st.check.code, ''))
-  if (blank.passed) bad(`stage ${st.id}: an empty program passes the check!`)
-  else ok(`stage ${st.id}: empty program rejected`)
+  // 0. Identity: unique id, all the copy present, exactly 4 stages and 3
+  //    stretches, and a payoff kind the shared validator map actually knows.
+  if (seenIds.has(c.id)) bad(`${c.id}: duplicate capstone id`)
+  seenIds.add(c.id)
+  if (!c.title?.trim() || !c.blurb?.trim() || !c.whyItMatters?.trim() || !c.payoffLabel?.trim())
+    bad(`${c.id}: missing copy — title, blurb, whyItMatters and payoffLabel are all required`)
+  if (c.stages.length !== 4 || !c.stages.every((s, i) => s.id === i + 1))
+    bad(`${c.id}: stages must be exactly 1..4 in order`)
+  if (c.stretches.length !== 3) bad(`${c.id}: expected exactly 3 stretches, got ${c.stretches.length}`)
+  const validate = payoffValidators[c.payoffKind]
+  if (!validate) bad(`${c.id}: no payoff validator for kind "${c.payoffKind}"`)
 
-  // 2. The hidden solution must pass every stage's check (cumulative by
-  //    construction — the whole program runs each time).
-  const good = JSON.parse(runAsserts(capstone.solution, st.check.code, ''))
-  if (!good.passed) bad(`stage ${st.id}: the reference solution fails — ${JSON.stringify(good.error)}`)
-  else ok(`stage ${st.id}: reference solution accepted`)
+  for (const st of c.stages) {
+    console.log(`\n Stage ${st.id}: ${st.title}`)
 
-  // 3. Hints: at least one, and the last names a real topic (by id) so
-  //    "out of hints" always points somewhere that exists.
-  if (!st.hints.length) bad(`stage ${st.id}: no hints — the ladder is empty`)
-  else {
-    const last = st.hints[st.hints.length - 1]
-    const named = [...topicIds].some((id) => {
-      const t = topics.find((x) => x.id === id)
-      return last.toLowerCase().includes(t.title.toLowerCase())
-    })
-    if (!named) bad(`stage ${st.id}: last hint doesn't name a real topic to review`)
-    else ok(`stage ${st.id}: ${st.hints.length} hints, last one points at a real topic`)
+    // 1. No blank editor may pass: the check against an EMPTY program must fail.
+    const blank = JSON.parse(runAsserts('', st.check.code, stdin))
+    if (blank.passed) bad(`stage ${st.id}: an empty program passes the check!`)
+    else ok(`stage ${st.id}: empty program rejected`)
+
+    // 2. The hidden solution must pass every stage's check (cumulative by
+    //    construction — the whole program runs each time).
+    const good = JSON.parse(runAsserts(c.solution, st.check.code, stdin))
+    if (!good.passed) bad(`stage ${st.id}: the reference solution fails — ${JSON.stringify(good.error)}`)
+    else ok(`stage ${st.id}: reference solution accepted`)
+
+    // 3. Hints: the ladder can't be empty — its last rung is the exit sign.
+    if (!st.hints.length) bad(`stage ${st.id}: no hints — the ladder is empty`)
+    else ok(`stage ${st.id}: ${st.hints.length} hints`)
+
+    // 4. topicRefs are the machine truth of "this stage stands on that rung":
+    //    every ref must resolve to a real topic AND a level it actually has.
+    if (!st.topicRefs?.length) bad(`stage ${st.id}: no topicRefs — the stage floats on nothing`)
+    else {
+      for (const ref of st.topicRefs) {
+        const t = topics.find((x) => x.id === ref.topicId)
+        if (!t) bad(`stage ${st.id}: topicRef points at unknown topic "${ref.topicId}"`)
+        else if (!t.levels.some((l) => l.level === ref.level))
+          bad(`stage ${st.id}: topicRef ${ref.topicId} · ${ref.level} — that topic has no such level`)
+      }
+      ok(`stage ${st.id}: ${st.topicRefs.length} topicRef(s) resolve`)
+    }
   }
-}
 
-// 4. The payoff: solution + harness must produce a valid, moving history.
-const col = JSON.parse(runCollect(capstone.solution, capstone.harness, ''))
-if (col.error) bad(`capstone collect errored: ${JSON.stringify(col.error)}`)
-else {
-  const h = col.value
-  const want = capstone.generations + 1
-  if (!Array.isArray(h) || h.length !== want) bad(`history should be ${want} frames (seed + ${capstone.generations}), got ${Array.isArray(h) ? h.length : typeof h}`)
-  else if (!h.every((g) => Array.isArray(g) && g.length === h[0].length && g.every((row) => Array.isArray(row) && row.length === h[0][0].length))) bad('history frames are not uniformly-shaped 2D grids')
-  else if (!h.every((g) => g.every((row) => row.every((c) => c === 0 || c === 1)))) bad('history contains cells that are not 0/1')
-  else if (JSON.stringify(h[0]) === JSON.stringify(h[1])) bad('the simulation is frozen — generation 1 is identical to the seed')
-  else ok(`capstone: ${want}-frame history, uniform grids, and the glider moves`)
+  // 5. The payoff, two layers. Shape: run_collect must succeed and satisfy
+  //    the SAME validator the UI gates the player with — if this passes, the
+  //    player renders. Semantics: the capstone's own payoffAsserts run over
+  //    __collect__ in the harness's namespace.
+  const col = JSON.parse(runCollect(c.solution, c.harness, stdin))
+  if (col.error) bad(`${c.id}: collect errored — ${JSON.stringify(col.error)}`)
+  else if (validate && !validate(col.value)) bad(`${c.id}: payoff shape rejected by the ${c.payoffKind} validator`)
+  else ok(`${c.id}: payoff shape valid — the ${c.payoffKind} player will render this`)
+
+  if (!c.payoffAsserts?.trim()) bad(`${c.id}: no payoffAsserts — the payoff's meaning is unverified`)
+  else {
+    const pa = JSON.parse(runAsserts(c.solution, c.harness + '\n' + c.payoffAsserts, stdin))
+    if (!pa.passed) bad(`${c.id}: payoffAsserts fail — ${JSON.stringify(pa.error)}`)
+    else ok(`${c.id}: payoffAsserts hold`)
+  }
+
+  // 6. Stretch code, if any, must run.
+  for (const [n, s] of c.stretches.entries()) {
+    if (!s.code) continue
+    const st = JSON.parse(runPlain(s.code, stdin))
+    if (st.error) bad(`${c.id} stretch ${n + 1}: code errored — ${st.error.type}: ${st.error.msg}`)
+    else ok(`${c.id} stretch ${n + 1}: code runs`)
+  }
 }
 
 console.log(`\n${failures === 0 ? 'ALL CONTENT CHECKS PASSED' : failures + ' FAILURE(S)'}`)

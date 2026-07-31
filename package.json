@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "sync-pyodide": "node scripts/sync-pyodide.mjs",
-    "verify-content": "esbuild src/content/topics/index.ts --bundle --format=esm --outfile=/tmp/pyloop-content.mjs && node scripts/verify-content.mjs",
+    "verify-content": "esbuild src/content/index.ts --bundle --format=esm --outfile=/tmp/pyloop-content.mjs && node scripts/verify-content.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

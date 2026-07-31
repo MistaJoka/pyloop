@@ -1,18 +1,20 @@
 import { useState } from 'react'
-import { capstone } from '../content/capstone'
+import type { Capstone } from '../content/capstones/types'
 import type { CapstoneProgress } from '../progress/store'
 import type { Runtime } from '../engine/runtime'
 import { checkSubmission } from '../engine/check'
 import type { CheckResult, PyError } from '../engine/types'
 import { RunawayError } from '../engine/types'
 import { Markdown } from './Markdown'
-import { GridPlayer, isValidHistory } from './GridPlayer'
+import { payoffPlayers } from './payoff'
 
 export function CapstoneShell({
+  capstone,
   runtime,
   progress,
   onSave,
 }: {
+  capstone: Capstone
   runtime: Runtime
   progress: CapstoneProgress | undefined
   onSave: (patch: Partial<CapstoneProgress>) => void
@@ -22,13 +24,14 @@ export function CapstoneShell({
   const [result, setResult] = useState<CheckResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [hintsShown, setHintsShown] = useState(0)
-  const [history, setHistory] = useState<number[][][] | null>(null)
+  const [payoffValue, setPayoffValue] = useState<unknown>(null)
   const [playError, setPlayError] = useState<PyError | null>(null)
 
+  const payoff = payoffPlayers[capstone.payoffKind]
   const complete = passed >= 4
   // The frontier stage: the first unpassed one. After completion there is no
   // frontier; Run replays the payoff.
-  const stage = complete ? null : capstone.stages[passed]
+  const stage = passed === 4 ? null : capstone.stages[passed]
 
   function persist(patch: Partial<CapstoneProgress>) {
     onSave({ code, ...patch })
@@ -37,22 +40,24 @@ export function CapstoneShell({
   async function runPayoff(source: string) {
     setBusy(true)
     setPlayError(null)
-    setHistory(null)
+    setPayoffValue(null)
     try {
-      const col = await runtime.collect(source, capstone.harness)
+      const col = await runtime.collect(source, capstone.harness, capstone.stdin ?? '')
       if (col.error) {
         setPlayError(col.error)
         return
       }
-      if (!isValidHistory(col.value)) {
+      if (!payoff || !payoff.validate(col.value)) {
         setPlayError({
           type: 'Shape',
-          msg: 'step() ran, but the history it produced is not a stack of same-sized 0/1 grids.',
+          msg:
+            payoff?.badShapeMsg ??
+            'The program ran, but what it produced is not a shape this capstone can play.',
           line: null,
         })
         return
       }
-      setHistory(col.value)
+      setPayoffValue(col.value)
     } catch (e) {
       setPlayError(
         e instanceof RunawayError
@@ -72,7 +77,7 @@ export function CapstoneShell({
     }
     setBusy(true)
     setResult(null)
-    const r = await checkSubmission(runtime, code, stage!.check)
+    const r = await checkSubmission(runtime, code, stage!.check, capstone.stdin ?? '')
     setBusy(false)
     setResult(r)
     if (r.passed) {
@@ -135,7 +140,7 @@ export function CapstoneShell({
 
       {complete && (
         <p className="mb-4 max-w-2xl t-lead" style={{ color: 'var(--good)' }}>
-          All four checkpoints passed. This is your simulation — run it, scrub it, change the
+          All four checkpoints passed. This is your program — run it, scrub it, change the
           code and run it again.
         </p>
       )}
@@ -165,7 +170,7 @@ export function CapstoneShell({
         autoCorrect="off"
         autoComplete="off"
         rows={Math.max(code.split('\n').length + 2, 10)}
-        placeholder="One program, built in four pieces. Start with the grid."
+        placeholder={capstone.placeholder ?? 'One program, built in four checkpoints.'}
         className="mono w-full resize-y rounded p-4 t-mono leading-7"
         style={{
           background: 'var(--panel)',
@@ -181,7 +186,7 @@ export function CapstoneShell({
           className="label rounded px-5 py-2.5 t-label"
           style={{ background: 'var(--amber)', color: 'var(--ground)', opacity: busy ? 0.5 : 1 }}
         >
-          {busy ? 'Running…' : complete ? 'Run the world' : 'Run it'}
+          {busy ? 'Running…' : complete ? capstone.runCta ?? 'Run it again' : 'Run it'}
         </button>
 
         {stage && !hintsSpent && (
@@ -242,7 +247,7 @@ export function CapstoneShell({
       {playError && (
         <div className="mt-5">
           <p className="label mb-2 t-label" style={{ color: 'var(--hot)' }}>
-            The world stumbled
+            The payoff stumbled
           </p>
           <p className="mono t-mono" style={{ color: 'var(--ink)' }}>
             {playError.line != null && (
@@ -253,12 +258,12 @@ export function CapstoneShell({
         </div>
       )}
 
-      {history && (
+      {payoffValue != null && payoff && (
         <div className="fade-rise mt-8">
           <p className="label mb-3 t-label" style={{ color: 'var(--amber)' }}>
-            Your world, {capstone.generations} generations
+            {capstone.payoffLabel}
           </p>
-          <GridPlayer history={history} />
+          {payoff.render(payoffValue)}
         </div>
       )}
 

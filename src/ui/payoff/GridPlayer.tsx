@@ -1,25 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
-/** Shape gate for what the collect harness returned: a non-empty stack of
- *  same-sized, non-empty 2D grids of 0/1. The player trusts its input; this
- *  is the bouncer at the door. */
-export function isValidHistory(v: unknown): v is number[][][] {
-  if (!Array.isArray(v) || v.length === 0) return false
-  const first = v[0]
-  if (!Array.isArray(first) || first.length === 0) return false
-  const rows = first.length
-  const cols = Array.isArray(first[0]) ? first[0].length : -1
-  if (cols <= 0) return false
-  return v.every(
-    (g) =>
-      Array.isArray(g) &&
-      g.length === rows &&
-      g.every(
-        (row) =>
-          Array.isArray(row) && row.length === cols && row.every((c) => c === 0 || c === 1),
-      ),
-  )
-}
+// The shape gate (isGridHistory) lives in src/content/capstones/payoff.ts so
+// verify-content can run the exact same bouncer. The player trusts its input.
 
 const FRAME_MS = 150
 

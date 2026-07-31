@@ -44,9 +44,10 @@ export type CapstoneProgress = {
  *  no streak, score, or reward here — completion state exists so the map can
  *  answer "which rungs have I done, and which did I fudge". */
 export type Progress = {
-  version: 2
+  version: 3
   topics: Record<string, TopicProgress>
-  capstone?: CapstoneProgress
+  /** Keyed by capstone id; sparse — a capstone never opened has no entry. */
+  capstones: Record<string, CapstoneProgress>
 }
 
 /** v1 stored one flat record per topic, before levels existed. */
@@ -58,10 +59,17 @@ type ProgressV1 = {
   >
 }
 
-const empty = (): Progress => ({ version: 2, topics: {} })
+/** v2 had exactly one capstone, so its progress was a single optional slot. */
+type ProgressV2 = {
+  version: 2
+  topics: Record<string, TopicProgress>
+  capstone?: CapstoneProgress
+}
+
+const empty = (): Progress => ({ version: 3, topics: {}, capstones: {} })
 
 /** A cleared topic in v1 was, in v2 terms, a cleared Beginner. */
-function migrateV1(old: ProgressV1): Progress {
+function migrateV1(old: ProgressV1): ProgressV2 {
   const topics: Record<string, TopicProgress> = {}
   for (const [id, t] of Object.entries(old.topics)) {
     topics[id] = { levels: { 1: { ...t, assisted: false } } } // v1 predates the solution hatch
@@ -69,15 +77,26 @@ function migrateV1(old: ProgressV1): Progress {
   return { version: 2, topics }
 }
 
+/** The single v2 capstone was Life; its record moves under that id. */
+function migrateV2(old: ProgressV2): Progress {
+  return {
+    version: 3,
+    topics: old.topics ?? {},
+    capstones: old.capstone ? { life: old.capstone } : {},
+  }
+}
+
 export function load(): Progress {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return empty()
-    const parsed = JSON.parse(raw) as Progress | ProgressV1
+    const parsed = JSON.parse(raw) as Progress | ProgressV2 | ProgressV1
     // Rebuild rather than pass through: older blobs carry a `streak` field that
     // no longer exists, and re-saving it would keep it alive forever.
-    if (parsed.version === 2) return { version: 2, topics: parsed.topics ?? {}, capstone: parsed.capstone }
-    if (parsed.version === 1) return migrateV1(parsed)
+    if (parsed.version === 3)
+      return { version: 3, topics: parsed.topics ?? {}, capstones: parsed.capstones ?? {} }
+    if (parsed.version === 2) return migrateV2(parsed)
+    if (parsed.version === 1) return migrateV2(migrateV1(parsed))
     return empty()
   } catch {
     return empty()
@@ -222,13 +241,27 @@ export function dueOn(p: Progress, day: string): DueItem[] {
   return items
 }
 
-/** Merge a patch onto the capstone record (creating it on first touch),
+/** Merge a patch onto one capstone's record (creating it on first touch),
  *  always restamping lastSeen. */
-export function saveCapstone(p: Progress, patch: Partial<CapstoneProgress>): Progress {
-  const prev = p.capstone ?? { passed: 0 as const, code: '', lastSeen: today() }
+export function saveCapstone(
+  p: Progress,
+  id: string,
+  patch: Partial<CapstoneProgress>,
+): Progress {
+  const prev = p.capstones[id] ?? { passed: 0 as const, code: '', lastSeen: today() }
   const merged = { ...prev, ...patch, lastSeen: today() }
   merged.passed = Math.max(prev.passed, merged.passed) as CapstoneProgress['passed']
-  return { ...p, capstone: merged }
+  return { ...p, capstones: { ...p.capstones, [id]: merged } }
 }
 
-export const capstonePassed = (p: Progress): 0 | 1 | 2 | 3 | 4 => p.capstone?.passed ?? 0
+export const capstonePassed = (p: Progress, id: string): 0 | 1 | 2 | 3 | 4 =>
+  p.capstones[id]?.passed ?? 0
+
+/** Checkpoints ticked across a set of capstones, out of 4 apiece — what the
+ *  map's pointer and the catalog header read. */
+export function capstoneTotals(p: Progress, ids: string[]): { passed: number; total: number } {
+  return {
+    passed: ids.reduce((n, id) => n + capstonePassed(p, id), 0),
+    total: ids.length * 4,
+  }
+}
