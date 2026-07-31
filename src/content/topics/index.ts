@@ -35,3 +35,5 @@ export const topicById = (id: string) => topics.find((t) => t.id === id)
 
 export const levelOf = (topic: Topic, level: LevelId) =>
   topic.levels.find((l) => l.level === level)
+
+export { capstone } from '../capstone'
