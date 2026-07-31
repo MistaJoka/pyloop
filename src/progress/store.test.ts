@@ -240,10 +240,19 @@ describe('capstone progress', () => {
   it('merges patches without losing the other fields', () => {
     at('2026-07-30T20:00:00')
     let p = saveCapstone(fresh(), { code: 'grid = []' })
+    at('2026-07-31T09:00:00')
     p = saveCapstone(p, { passed: 2 })
     expect(p.capstone?.code).toBe('grid = []')
     expect(p.capstone?.passed).toBe(2)
     expect(capstonePassed(p)).toBe(2)
+    expect(p.capstone?.lastSeen).toBe('2026-07-31')
+  })
+
+  it('does not let a lower passed value regress the high-water mark', () => {
+    at('2026-07-30T20:00:00')
+    let p = saveCapstone(fresh(), { passed: 3 })
+    p = saveCapstone(p, { passed: 1 })
+    expect(p.capstone?.passed).toBe(3)
   })
 
   it('round-trips through localStorage', () => {

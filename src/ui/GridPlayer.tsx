@@ -60,6 +60,7 @@ export function GridPlayer({ history }: { history: number[][][] }) {
     <div
       tabIndex={0}
       onKeyDown={(e) => {
+        if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return
         if (e.key === ' ') {
           e.preventDefault()
           if (playing || frame < last) {
@@ -109,7 +110,12 @@ export function GridPlayer({ history }: { history: number[][][] }) {
         >
           {playing ? 'Pause' : 'Play'}
         </button>
-        <button onClick={() => step(-1)} className="t-lead" style={{ color: 'var(--dim)' }}>
+        <button
+          onClick={() => step(-1)}
+          aria-label="Previous frame"
+          className="t-lead"
+          style={{ color: 'var(--dim)' }}
+        >
           ◀
         </button>
         <input
@@ -123,7 +129,12 @@ export function GridPlayer({ history }: { history: number[][][] }) {
           }}
           className="flex-1"
         />
-        <button onClick={() => step(1)} className="t-lead" style={{ color: 'var(--dim)' }}>
+        <button
+          onClick={() => step(1)}
+          aria-label="Next frame"
+          className="t-lead"
+          style={{ color: 'var(--dim)' }}
+        >
           ▶
         </button>
         <span className="label t-label" style={{ color: 'var(--dim)' }}>

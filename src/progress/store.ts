@@ -226,7 +226,9 @@ export function dueOn(p: Progress, day: string): DueItem[] {
  *  always restamping lastSeen. */
 export function saveCapstone(p: Progress, patch: Partial<CapstoneProgress>): Progress {
   const prev = p.capstone ?? { passed: 0 as const, code: '', lastSeen: today() }
-  return { ...p, capstone: { ...prev, ...patch, lastSeen: today() } }
+  const merged = { ...prev, ...patch, lastSeen: today() }
+  merged.passed = Math.max(prev.passed, merged.passed) as CapstoneProgress['passed']
+  return { ...p, capstone: merged }
 }
 
 export const capstonePassed = (p: Progress): 0 | 1 | 2 | 3 | 4 => p.capstone?.passed ?? 0

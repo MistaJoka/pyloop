@@ -4,6 +4,7 @@ import type { CapstoneProgress } from '../progress/store'
 import type { Runtime } from '../engine/runtime'
 import { checkSubmission } from '../engine/check'
 import type { CheckResult, PyError } from '../engine/types'
+import { RunawayError } from '../engine/types'
 import { Markdown } from './Markdown'
 import { GridPlayer, isValidHistory } from './GridPlayer'
 
@@ -37,21 +38,30 @@ export function CapstoneShell({
     setBusy(true)
     setPlayError(null)
     setHistory(null)
-    const col = await runtime.collect(source, capstone.harness)
-    setBusy(false)
-    if (col.error) {
-      setPlayError(col.error)
-      return
+    try {
+      const col = await runtime.collect(source, capstone.harness)
+      if (col.error) {
+        setPlayError(col.error)
+        return
+      }
+      if (!isValidHistory(col.value)) {
+        setPlayError({
+          type: 'Shape',
+          msg: 'step() ran, but the history it produced is not a stack of same-sized 0/1 grids.',
+          line: null,
+        })
+        return
+      }
+      setHistory(col.value)
+    } catch (e) {
+      setPlayError(
+        e instanceof RunawayError
+          ? { type: 'Runaway', msg: "That ran forever — it never stopped on its own. Check your loop's exit condition.", line: null }
+          : { type: 'Error', msg: e instanceof Error ? e.message : String(e), line: null },
+      )
+    } finally {
+      setBusy(false)
     }
-    if (!isValidHistory(col.value)) {
-      setPlayError({
-        type: 'Shape',
-        msg: 'step() ran, but the history it produced is not a stack of same-sized 0/1 grids.',
-        line: null,
-      })
-      return
-    }
-    setHistory(col.value)
   }
 
   async function submit() {
@@ -132,7 +142,10 @@ export function CapstoneShell({
 
       <textarea
         value={code}
-        onChange={(e) => setCode(e.target.value)}
+        onChange={(e) => {
+          setCode(e.target.value)
+          onSave({ code: e.target.value })
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Tab') {
             e.preventDefault()
