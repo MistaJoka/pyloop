@@ -282,6 +282,166 @@ def stats(rows):
 report = stats(clean(lines))
 print(f"{report['count']} rows clean — mean {report['mean_score']}, top {report['top']} ({report['max_score']})")`,
 
+  walkthrough: [
+    {
+      title: 'Get it on disk, get it back',
+      body: `The pipeline starts by making the file real: write the raw survey out,
+read it back. That round-trip isn't ceremony — reading from an actual file
+is what makes this a *pipeline* instead of a string exercise, and it's the
+same two \`with open\` moves every data job starts with. The read ends with
+the first two cleanups: blank lines out, header off.`,
+      code: `RAW = """name,age,score
+ana,20,88
+  BEN , 19 , 74
+carla,21,91
+
+dev,twenty,60
+elena,22,85
+felix,19,
+gina,20,79
+ana,20,88
+hana,23,ninety
+liam,25
+ivan,18,66
+jo,21,73
+kai,24,80"""
+
+with open("survey.csv", "w") as f:
+    f.write(RAW)
+
+with open("survey.csv") as f:
+    stripped = [line.strip() for line in f]
+lines = [l for l in stripped if l != ""][1:]`,
+      notes: {
+        21: 'Looping over an open file hands you its lines one at a time — newline still attached, which is why every one gets `.strip()`ped on the way in.',
+        22: 'Two cleanups chained: keep the non-blank lines, then `[1:]` slices off the header. Order matters — strip first, or the blank line would still be `"\\n"` and sneak past the filter.',
+      },
+      topicRefs: [
+        { topicId: 'files', level: 2 },
+        { topicId: 'strings', level: 2 },
+      ],
+    },
+    {
+      title: 'Parse one row, defensively',
+      body: `One line in, one verdict out: a clean dict, or \`None\`. The order of the
+guards is the design — cheap structural checks first (field count, blanks),
+the risky conversion last, and the *only* thing inside the \`try\` is the
+part that can actually blow up. A bad row is information, not an emergency.`,
+      code: `def parse_row(line):
+    fields = [f.strip() for f in line.split(",")]
+    if len(fields) != 3:
+        return None
+    name, age, score = fields
+    if name == "" or age == "" or score == "":
+        return None
+    try:
+        return {"name": name.title(), "age": int(age), "score": int(score)}
+    except ValueError:
+        return None`,
+      notes: {
+        5: 'Unpacking is only safe because line 3 already proved there are exactly three fields — unpack first and a two-field line would crash the parser instead of being judged by it.',
+        9: '`int("twenty")` is where the crash lives, so the conversion happens inside the `try`. Everything that can be checked without risk already was.',
+        10: 'Catching `ValueError` and nothing wider: a typo in the data returns None, but a genuine bug in the code still crashes loudly — exactly the two behaviors you want.',
+      },
+      topicRefs: [
+        { topicId: 'exceptions', level: 2 },
+        { topicId: 'strings', level: 3 },
+      ],
+    },
+    {
+      title: 'Clean the lot',
+      body: `The whole file through the parser, with the second kind of junk handled:
+duplicates. The \`seen\` set remembers every name already kept; first
+appearance wins, and appending in loop order keeps the file's original
+order for free.`,
+      code: `def clean(lines):
+    rows = []
+    seen = set()
+    for line in lines:
+        row = parse_row(line)
+        if row is None:
+            continue
+        if row["name"] in seen:
+            continue
+        seen.add(row["name"])
+        rows.append(row)
+    return rows`,
+      notes: {
+        8: 'The seen-set idiom: `in` on a set answers "have I kept this name before?" instantly, no matter how big the file gets. A list would work; a set stays fast.',
+      },
+      topicRefs: [
+        { topicId: 'dicts-and-sets', level: 3 },
+        { topicId: 'for-loops', level: 3 },
+      ],
+    },
+    {
+      title: 'Report',
+      body: `One pass gathers everything: the running total for the mean, lowest and
+highest so far, and the row that currently owns the top score. Then the
+program ends the way every pipeline should — by saying what it found,
+in one printed line.`,
+      code: `def stats(rows):
+    total = 0
+    best = rows[0]
+    lowest = rows[0]["score"]
+    highest = rows[0]["score"]
+    for r in rows:
+        total = total + r["score"]
+        if r["score"] > best["score"]:
+            best = r
+        if r["score"] < lowest:
+            lowest = r["score"]
+        if r["score"] > highest:
+            highest = r["score"]
+    return {
+        "count": len(rows),
+        "mean_score": round(total / len(rows), 1),
+        "top": best["name"],
+        "min_score": lowest,
+        "max_score": highest,
+    }
+
+report = stats(clean(lines))
+print(f"{report['count']} rows clean — mean {report['mean_score']}, top {report['top']} ({report['max_score']})")`,
+      notes: {
+        3: 'The report wants the top scorer\'s NAME, so the loop keeps the whole best *row*, not the best score — the name rides along and gets picked out at the end.',
+        23: 'An f-string with dict lookups inside: the inner quotes must differ from the outer ones. This one line is the entire user interface of the pipeline.',
+      },
+      topicRefs: [
+        { topicId: 'functions', level: 3 },
+        { topicId: 'operators', level: 3 },
+        { topicId: 'input-output', level: 3 },
+      ],
+    },
+    {
+      title: 'The verdict pass',
+      body: `You never wrote this — PyLoop runs it after your program to build the
+line-by-line replay you watch in the payoff. (Tidied for reading; the real
+harness is this with guarded names.) Your \`clean\` returns only the
+survivors, but the player needs a verdict for *every* raw line — kept or
+rejected — so the harness re-walks the file with your own \`parse_row\`
+and the same seen-set rule, recording each line's fate.`,
+      code: `raw_lines = RAW.splitlines()
+seen = set()
+verdicts = []
+for i, line in enumerate(raw_lines):
+    s = line.strip()
+    if i == 0 or s == "":
+        verdicts.append({"line": line, "kept": False})
+        continue
+    p = parse_row(s)
+    if p is None or p["name"] in seen:
+        verdicts.append({"line": line, "kept": False})
+        continue
+    seen.add(p["name"])
+    verdicts.append({"line": line, "kept": True})`,
+      notes: {
+        4: '`enumerate` hands back position and value together — the position is how line 0 (the header) gets recognized and rejected without any string matching.',
+      },
+      aside: true,
+    },
+  ],
+
   stretches: [
     {
       title: 'Any column, not just score',

@@ -179,6 +179,88 @@ def next_state(alive, count):
 def step(grid):
     return [[next_state(grid[r][c], count_neighbors(grid, r, c)) for c in range(len(grid[0]))] for r in range(len(grid))]`,
 
+  walkthrough: [
+    {
+      title: 'Represent the grid',
+      body: `A world has to be data before it can be anything else. Here it's a list
+of 10 rows, each row a list of 10 numbers — so \`grid[r][c]\` reads exactly
+like "row r, column c". Five cells get flipped alive by hand: that L-shaped
+cluster is a **glider**, the smallest pattern that travels.`,
+      code: `grid = [[0] * 10 for _ in range(10)]
+for r, c in [(0, 1), (1, 2), (2, 0), (2, 1), (2, 2)]:
+    grid[r][c] = 1`,
+      notes: {
+        1: 'The comprehension builds each row **fresh**. The tempting shortcut `[[0]*10]*10` makes ten names for ONE row — flip one cell and a whole column lights up. This line is the difference between a grid and a hall of mirrors.',
+        2: 'Tuple unpacking in the loop header: each `(r, c)` pair splits into two names as it arrives. Five coordinates, five assignments, no counter in sight.',
+      },
+      topicRefs: [{ topicId: 'lists-and-tuples', level: 4 }],
+    },
+    {
+      title: 'Count neighbors',
+      body: `Every rule in Life is asked in terms of a cell's eight neighbors, so
+counting them is the load-bearing function. The shape: two nested loops
+sweep the 3×3 block around the cell, skip the center, and only read cells
+that actually exist — off the edge counts as dead, never as a crash.`,
+      code: `def count_neighbors(grid, row, col):
+    count = 0
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            if dr == 0 and dc == 0:
+                continue
+            r, c = row + dr, col + dc
+            if 0 <= r < len(grid) and 0 <= c < len(grid[0]):
+                count += grid[r][c]
+    return count`,
+      notes: {
+        5: 'The center of the 3×3 block is the cell itself — a cell is not its own neighbor. `continue` skips it and the loop moves on.',
+        8: 'The edge guard. Both chained comparisons must hold before the grid is read, so a corner cell quietly gets 5 of its 8 "neighbors" contributing nothing — instead of an IndexError.',
+        9: 'Alive is `1`, dead is `0` — so *adding* cells IS counting the live ones. No if needed.',
+      },
+      topicRefs: [{ topicId: 'for-loops', level: 4 }],
+    },
+    {
+      title: 'Apply the rule',
+      body: `The whole physics of this universe, in four lines. No loops, no grid —
+just two inputs (am I alive? how many neighbors?) and one output. Keeping
+the rule separate from the sweep is what made both easy to test: the rule
+never has to know a grid exists.`,
+      code: `def next_state(alive, count):
+    if alive == 1:
+        return 1 if count in (2, 3) else 0
+    return 1 if count == 3 else 0`,
+      topicRefs: [{ topicId: 'conditionals', level: 3 }],
+    },
+    {
+      title: 'Step the world',
+      body: `One tick: every cell gets judged by the *current* grid, and the verdicts
+build a *new* grid. That separation is the classic Life bug in reverse —
+write into the grid you're reading and cells start judging a half-updated
+world, and gliders dissolve into static.`,
+      code: `def step(grid):
+    return [[next_state(grid[r][c], count_neighbors(grid, r, c)) for c in range(len(grid[0]))] for r in range(len(grid))]`,
+      notes: {
+        2: 'A comprehension inside a comprehension: the outer one walks rows, the inner one walks columns, and every cell value comes from functions that only ever READ the old grid. New world out, old world untouched.',
+      },
+      topicRefs: [{ topicId: 'for-loops', level: 5 }],
+    },
+    {
+      title: 'Forty ticks, kept as frames',
+      body: `You never wrote this part — PyLoop runs it after your program, and it's
+how the player gets something to play. (Tidied for reading; the real
+harness does exactly this with guarded names.) It steps the world 40 times
+and photographs it after each tick — 41 frames including the seed.`,
+      code: `world = [row[:] for row in grid]
+history = [[row[:] for row in world]]
+for _ in range(40):
+    world = step(world)
+    history.append([row[:] for row in world])`,
+      notes: {
+        2: '`row[:]` copies a row; doing it for every row copies the whole grid. Without the copies, every frame in the history would be a name for the SAME final grid — a 41-frame film of one photograph.',
+      },
+      aside: true,
+    },
+  ],
+
   stretches: [
     {
       title: 'Wrap it in a class',

@@ -11,6 +11,27 @@ export type PayoffKind = 'grid' | 'table' | 'cipher' | 'textgen' | 'ledger'
  *  checks it resolves to a real topic and a level that topic actually has. */
 export type TopicRef = { topicId: string; level: LevelId }
 
+/** One section of the finished-build walkthrough. Sections marked `aside`
+ *  are shown but NOT part of the joined program — they explain the harness
+ *  PyLoop runs after your code. Everything else, joined in order with blank
+ *  lines between, IS the finished program: verify-content proves the joined
+ *  code passes all four stage checks and the payoff, and the reading view's
+ *  Run button runs exactly that joined code. */
+export type WalkthroughSection = {
+  title: string
+  /** Markdown prose: what this part does and the decision behind it —
+   *  the syntax gloss belongs in `notes`, not here. */
+  body: string
+  /** Python. `notes` line numbers are 1-based WITHIN this section. */
+  code: string
+  /** Watch-style: only genuinely tricky lines get one. Sparse on purpose. */
+  notes?: Record<number, string>
+  /** Rungs this section stands on — rendered as jump chips like the stages'. */
+  topicRefs?: TopicRef[]
+  /** True = explanatory only; excluded from the joined runnable program. */
+  aside?: true
+}
+
 export type CapstoneStage = {
   id: 1 | 2 | 3 | 4
   title: string
@@ -55,5 +76,8 @@ export type Capstone = {
   /** Reference program satisfying all four checks. verify-content only —
    *  never surfaced in the UI. */
   solution: string
+  /** The finished build, for reading. Joined non-aside code must pass every
+   *  stage check and the payoff — verify-content gates it. */
+  walkthrough: WalkthroughSection[]
   stretches: { title: string; body: string; code?: string }[]
 }

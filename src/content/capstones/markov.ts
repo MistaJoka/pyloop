@@ -265,6 +265,135 @@ def generate(chain, start, n):
         current = nxt
     return " ".join(out)`,
 
+  walkthrough: [
+    {
+      title: 'Tokenize',
+      body: `A model can't eat prose — it eats **tokens**. Splitting on whitespace
+gets you words; stripping edge punctuation and lowercasing makes \`The\`
+and \`the.\` the same token, which is what lets their counts pool together.
+This tiny normalizer is doing the same job (crudely) that a real
+tokenizer does for a language model.`,
+      code: `import random
+
+CORPUS = """the moon saw the cat. the cat saw the river.
+the river ran to the sea. the sea sang to the moon.
+the cat ran to the moon. the moon sang to the river.
+the sea saw the cat. the river sang to the sea.
+the moon ran to the cat. the sea ran to the river.
+the cat sang to the sea. the river saw the moon."""
+
+def tokenize(text):
+    words = []
+    for raw in text.split():
+        words.append(raw.strip(".,!?").lower())
+    return words
+
+words = tokenize(CORPUS)`,
+      notes: {
+        13: '`.strip(".,!?")` peels any of those characters off both ENDS of the word — `sea.` becomes `sea` — but never touches the middle. Then `.lower()` folds the case, so every appearance of a word lands on the same count.',
+      },
+      topicRefs: [
+        { topicId: 'strings', level: 3 },
+        { topicId: 'lists-and-tuples', level: 2 },
+      ],
+    },
+    {
+      title: 'Count what follows',
+      body: `The model itself — and it's just a dict of dicts. For every adjacent
+pair of tokens, bump a counter: \`chain["the"]\` ends up as a table of
+every word that ever followed "the", with how often. That table IS the
+learned knowledge. Nothing else gets stored.`,
+      code: `def build_chain(words):
+    chain = {}
+    for i in range(len(words) - 1):
+        word = words[i]
+        nxt = words[i + 1]
+        if word not in chain:
+            chain[word] = {}
+        chain[word][nxt] = chain[word].get(nxt, 0) + 1
+    return chain
+
+chain = build_chain(words)`,
+      notes: {
+        3: 'The `- 1` matters: the loop reads pairs `(words[i], words[i+1])`, and the last word has nothing after it — walking one step short keeps `i + 1` in bounds.',
+        8: 'The counting idiom: `.get(nxt, 0)` reads the current count *or zero if this pair is new*, then `+ 1` writes it back. One line replaces a four-line if/else.',
+      },
+      topicRefs: [
+        { topicId: 'dicts-and-sets', level: 4 },
+        { topicId: 'for-loops', level: 3 },
+      ],
+    },
+    {
+      title: 'Choose the next word',
+      body: `Prediction time. The counts become *weights*: a follower seen three
+times gets three tickets in the draw, one seen once gets one. That's
+weighted sampling — the same move, dressed up, that a language model
+makes every time it picks the next token from its probabilities.`,
+      code: `def next_word(chain, word):
+    if word not in chain:
+        return None
+    candidates = []
+    for follower, count in chain[word].items():
+        candidates.extend([follower] * count)
+    return random.choice(candidates)`,
+      notes: {
+        6: '`[follower] * count` builds `["cat", "cat", "cat"]` for a count of 3 — repetition as weighting. `random.choice` then picks uniformly, but the repeats mean frequent followers win proportionally more often.',
+      },
+      topicRefs: [
+        { topicId: 'dicts-and-sets', level: 3 },
+        { topicId: 'conditionals', level: 3 },
+      ],
+    },
+    {
+      title: 'Generate',
+      body: `The walk: start somewhere, ask the model what comes next, step, repeat.
+Stop when the sentence is long enough — or early, if the walk hits a word
+with no known followers. Every language model demo you've ever seen is
+this loop with a bigger table.`,
+      code: `def generate(chain, start, n):
+    out = [start]
+    current = start
+    while len(out) < n:
+        nxt = next_word(chain, current)
+        if nxt is None:
+            break
+        out.append(nxt)
+        current = nxt
+    return " ".join(out)`,
+      notes: {
+        4: 'The condition is about the *output* (how many words so far), not a counter — a while loop earns its keep exactly when the stopping rule is a condition, not a count.',
+      },
+      topicRefs: [
+        { topicId: 'while-loops', level: 3 },
+        { topicId: 'functions', level: 4 },
+      ],
+    },
+    {
+      title: 'The seeded walk',
+      body: `You never wrote this — PyLoop runs it after your program to stage the
+payoff. (Tidied for reading; the real harness is this with guarded names.)
+It walks 40 steps from "the", and before every step it records the full
+option table your model was choosing from — that's the candidate bars you
+watch weigh and settle in the player.`,
+      code: `import random
+random.seed(2026)
+walk = ["the"]
+steps = []
+current = "the"
+for _ in range(40):
+    options = sorted(chain[current].items(), key=lambda kv: (-kv[1], kv[0]))
+    nxt = next_word(chain, current)
+    steps.append({"word": current, "options": options, "chosen": nxt})
+    walk.append(nxt)
+    current = nxt`,
+      notes: {
+        2: 'The seed pins the randomness: same seed, same "random" choices, same walk — every single run. It\'s why Run replays identically here, and it\'s the exact knob every ML experiment sets first so results can be reproduced.',
+        7: 'Sort the followers by count (descending — hence the minus) and alphabetically to break ties: a stable, readable option table for the player to draw.',
+      },
+      aside: true,
+    },
+  ],
+
   stretches: [
     {
       title: 'Trigrams — give it two words of memory',

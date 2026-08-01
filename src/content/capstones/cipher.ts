@@ -253,6 +253,141 @@ def crack(ciphertext):
         k += 1
     return best_shift`,
 
+  walkthrough: [
+    {
+      title: 'The message, and one letter',
+      body: `Everything in this kit rests on one idea: **letters are numbers wearing
+costumes**. \`ord\` takes the costume off, arithmetic does the work, \`chr\`
+puts it back on. \`shift_char\` handles exactly one character — the whole
+message is someone else's job, which is what keeps each function small
+enough to trust.`,
+      code: `message = input()
+
+def shift_char(ch, k):
+    if "a" <= ch <= "z":
+        return chr((ord(ch) - ord("a") + k) % 26 + ord("a"))
+    if "A" <= ch <= "Z":
+        return chr((ord(ch) - ord("A") + k) % 26 + ord("A"))
+    return ch`,
+      notes: {
+        1: "input() reads whatever gets typed — here, PyLoop types the mission text for this capstone: `meet me at the old pier at midnight`. The program never hard-codes its message; it processes whatever arrives.",
+        5: 'The whole cipher in one expression, inside-out: `ord(ch) - ord("a")` turns the letter into 0–25, `+ k` shifts it, `% 26` wraps z back around to a (and handles negative shifts too), `+ ord("a")` and `chr` turn it back into a letter.',
+        8: "Anything that isn't a letter — spaces, punctuation — passes through untouched. That's why the encoded message keeps its word shapes.",
+      },
+      topicRefs: [
+        { topicId: 'input-output', level: 2 },
+        { topicId: 'operators', level: 4 },
+      ],
+    },
+    {
+      title: 'The whole message',
+      body: `Scaling one character up to a full message is a loop and a join — and
+then \`decode\` costs one line, because undoing a shift of \`k\` is just
+shifting by \`-k\`. When an inverse falls out this cheaply, it's a sign the
+design underneath is right.`,
+      code: `def encode(text, k):
+    out = []
+    for ch in text:
+        out.append(shift_char(ch, k))
+    return "".join(out)
+
+def decode(text, k):
+    return encode(text, -k)`,
+      notes: {
+        5: 'Collect pieces in a list, join once at the end. Building a string with `+=` in a loop works too, but the list-then-join shape is the idiom you\'ll meet everywhere real text gets assembled.',
+        8: 'The whole decoder. Encoding moved every letter k steps clockwise; decoding is k steps back — same machine, reversed.',
+      },
+      topicRefs: [
+        { topicId: 'for-loops', level: 2 },
+        { topicId: 'strings', level: 4 },
+        { topicId: 'functions', level: 2 },
+      ],
+    },
+    {
+      title: 'Substitution — a scrambled alphabet',
+      body: `A Caesar shift is one secret number; a substitution cipher is a whole
+scrambled alphabet, and the natural home for "this maps to that" is a
+dict. Two tables — forward and flipped — and encoding becomes lookup.`,
+      code: `KEY = "qwertyuiopasdfghjklzxcvbnm"
+
+def make_table(key):
+    table = {}
+    for i in range(26):
+        table[chr(ord("a") + i)] = key[i]
+    return table
+
+def flip(table):
+    flipped = {}
+    for plain, secret in table.items():
+        flipped[secret] = plain
+    return flipped
+
+def sub_encode(text, table):
+    out = []
+    for ch in text:
+        if ch in table:
+            out.append(table[ch])
+        else:
+            out.append(ch)
+    return "".join(out)`,
+      notes: {
+        6: 'Position i of the real alphabet maps to position i of the key: a→q, b→w, c→e… The dict makes the pairing explicit and instant to look up.',
+        12: 'Decoding is the same table inside-out — swap every key with its value and lookups now run in reverse. One loop, and the decoder exists.',
+      },
+      topicRefs: [{ topicId: 'dicts-and-sets', level: 2 }],
+    },
+    {
+      title: 'Crack it',
+      body: `The payoff twist: a Caesar cipher has only 26 possible keys, and English
+has a *shape*. Try every shift, score each guess by how much it looks like
+English, and the right one rises. No secrets survive counting — which is
+the whole reason modern ciphers don't work anything like this.`,
+      code: `def crack(ciphertext):
+    best_shift = 0
+    best_score = -1
+    k = 0
+    while k < 26:
+        guess = decode(ciphertext, k)
+        score = 0
+        for ch in guess:
+            if ch in "etaoin":
+                score += 1
+        if score > best_score:
+            best_score = score
+            best_shift = k
+        k += 1
+    return best_shift`,
+      notes: {
+        9: '`"etaoin"` — the six most common letters in English, in order. The correct decode is full of them; the 25 wrong ones read like static and score low. Frequency is the fingerprint.',
+      },
+      topicRefs: [
+        { topicId: 'while-loops', level: 3 },
+        { topicId: 'dicts-and-sets', level: 3 },
+      ],
+    },
+    {
+      title: 'The lineup',
+      body: `You never wrote this — PyLoop runs it after your program to stage the
+payoff. (Tidied for reading; the real harness is this with guarded names.)
+It encodes your message with shift 7, pairs every plain character with its
+cipher twin for the sweep animation, builds all 26 candidate decodings,
+and asks your \`crack\` to pick the culprit.`,
+      code: `k = 7
+encoded = encode(message, k)
+pairs = list(zip(message, encoded))
+candidates = []
+s = 0
+while s < 26:
+    candidates.append({"shift": s, "text": decode(encoded, s)})
+    s += 1
+cracked = crack(encoded)`,
+      notes: {
+        3: '`zip` walks two strings in lockstep, pairing character with character — plain `m` with cipher `t`, and so on. Those pairs are exactly what the character-by-character animation plays.',
+      },
+      aside: true,
+    },
+  ],
+
   stretches: [
     {
       title: 'Vigenère — a keyword of shifts',

@@ -277,6 +277,139 @@ def load_account(filename):
             account.withdraw(int(amount))
     return account`,
 
+  walkthrough: [
+    {
+      title: 'The account object',
+      body: `State and the rules about it, traveling together — that's the whole
+argument for classes, and a bank account is its cleanest possible case.
+\`__init__\` sets up everything an account *is*: who owns it, what it
+holds, and a history that starts with its own opening. The custom
+exception comes first because the methods below will need it by name.`,
+      code: `class InsufficientFunds(Exception):
+    pass
+
+class Account:
+    def __init__(self, owner, balance=0):
+        self.owner = owner
+        self.balance = balance
+        self.history = [("open", balance, balance)]`,
+      notes: {
+        1: 'Two lines make a new *kind* of failure. Subclassing `Exception` means it behaves like every other error — but now callers can catch exactly this one and let real bugs keep crashing.',
+        8: 'The audit trail starts at birth: the opening balance is itself an event. Every entry is a tuple `(operation, amount, balance_after)` — the fixed-shape record tuples exist for.',
+      },
+      topicRefs: [
+        { topicId: 'classes', level: 2 },
+        { topicId: 'exceptions', level: 3 },
+      ],
+    },
+    {
+      title: 'Refuse bad money',
+      body: `The rules. Both methods follow the same discipline: **validate first,
+mutate after**. Every \`raise\` happens before the balance is touched, so
+a refused transaction leaves no trace — no half-applied deposit, no
+phantom history entry. That ordering is the entire integrity story of
+this ledger.`,
+      code: `    def deposit(self, amount):
+        if amount <= 0:
+            raise ValueError("deposit must be a positive amount")
+        self.balance += amount
+        self.history.append(("deposit", amount, self.balance))
+
+    def withdraw(self, amount):
+        if amount <= 0:
+            raise ValueError("withdrawal must be a positive amount")
+        if amount > self.balance:
+            raise InsufficientFunds(f"{amount} exceeds balance {self.balance}")
+        self.balance -= amount
+        self.history.append(("withdraw", amount, self.balance))`,
+      notes: {
+        3: 'A nonsense amount is the *caller\'s* mistake, and `ValueError` is Python\'s standard name for it. Raising is refusing — the method never gets to the mutation lines.',
+        11: 'The named exception earns its keep: overdrawing isn\'t a nonsense amount, it\'s a business rule, and it carries the numbers in its message so the failure explains itself.',
+      },
+      topicRefs: [
+        { topicId: 'classes', level: 3 },
+        { topicId: 'conditionals', level: 2 },
+      ],
+    },
+    {
+      title: 'Write the ledger out',
+      body: `The history becomes a file: the owner on line one, then one
+comma-separated line per event. Nothing clever — which is the point. A
+ledger you can open in a text editor is a ledger you can trust.`,
+      code: `def save_history(account, filename):
+    with open(filename, "w") as f:
+        f.write(account.owner + "\\n")
+        for op, amount, balance in account.history:
+            f.write(f"{op},{amount},{balance}\\n")`,
+      notes: {
+        4: 'Tuple unpacking in the loop header: each history entry splits into its three parts as it arrives — no indexing, and the names document the format.',
+      },
+      topicRefs: [
+        { topicId: 'files', level: 3 },
+        { topicId: 'strings', level: 3 },
+      ],
+    },
+    {
+      title: 'Load by replaying',
+      body: `The trick of the whole capstone: loading doesn't *parse the history
+back* — it **replays** it. The open row rebuilds the account at its
+starting balance, and every later row goes through the real \`deposit\`
+and \`withdraw\` methods, which re-run the rules and rebuild the history
+as a side effect. If the file and the rules disagree, the load crashes —
+which is exactly what an audit should do. (Databases call this event
+sourcing; you just wrote it.)`,
+      code: `def load_account(filename):
+    with open(filename) as f:
+        lines = [line.strip() for line in f if line.strip() != ""]
+    owner = lines[0]
+    op, amount, balance = lines[1].split(",")
+    account = Account(owner, int(amount))
+    for line in lines[2:]:
+        op, amount, balance = line.split(",")
+        if op == "deposit":
+            account.deposit(int(amount))
+        else:
+            account.withdraw(int(amount))
+    return account`,
+      notes: {
+        6: 'Row one after the owner is always the `open` event — its amount is the opening balance, so constructing the Account from it recreates minute zero.',
+        10: 'The replay: real method calls, not history edits. The rules run again, the balance moves again, `history` rebuilds itself entry by entry — for free.',
+      },
+      topicRefs: [
+        { topicId: 'files', level: 3 },
+        { topicId: 'for-loops', level: 2 },
+      ],
+    },
+    {
+      title: 'Six operations, two refusals, one replay',
+      body: `You never wrote this — PyLoop runs it after your program to stage the
+payoff. (Tidied for reading; the real harness is this with guarded names.)
+A fixed script of six operations runs against your Account — two of them
+built to be refused — then the ledger goes to disk and comes back through
+\`load_account\`. The final frame's claim, "replayed: matches", is your
+\`final == replayed\` proof playing out.`,
+      code: `account = Account("A. Worthington", 100)
+script = [("deposit", 250), ("withdraw", 40), ("withdraw", 5000),
+          ("deposit", -10), ("deposit", 75), ("withdraw", 120)]
+steps = []
+for op, amount in script:
+    try:
+        if op == "deposit":
+            account.deposit(amount)
+        else:
+            account.withdraw(amount)
+        steps.append((op, amount, "ok", account.balance))
+    except Exception as e:
+        steps.append((op, amount, type(e).__name__, account.balance))
+save_history(account, "ledger.txt")
+replayed = load_account("ledger.txt")`,
+      notes: {
+        6: 'The try/except around each operation is what turns refusals into *rows* instead of crashes — `type(e).__name__` records which rule fired, and the script marches on.',
+      },
+      aside: true,
+    },
+  ],
+
   stretches: [
     {
       title: 'Transfer — two accounts, one hard question',

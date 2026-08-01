@@ -9,6 +9,7 @@ import { LoopShell } from './ui/LoopShell'
 import { Review } from './ui/Review'
 import { CapstoneShell } from './ui/CapstoneShell'
 import { CapstoneCatalog } from './ui/CapstoneCatalog'
+import { FinishedBuild } from './ui/FinishedBuild'
 import { Shell, type ShellMode } from './ui/Shell'
 import {
   capstoneTotals,
@@ -22,15 +23,17 @@ import {
   type Progress,
 } from './progress/store'
 
-/** The whole "router". A lesson opened from a capstone carries `returnTo`,
- *  so finishing (or bailing) lands back in that capstone, not on the map.
- *  Explicit nav — Map/Review/Capstones buttons — always drops the trail. */
+/** The whole "router". A lesson opened from a capstone (build view or the
+ *  finished-build reading view) carries `returnTo`, so finishing (or bailing)
+ *  lands back exactly where the chip was tapped, not on the map. Explicit
+ *  nav — Map/Review/Capstones buttons — always drops the trail. */
 type View =
   | { kind: 'map' }
   | { kind: 'review' }
   | { kind: 'capstones' }
   | { kind: 'capstone'; id: CapstoneId }
-  | { kind: 'loop'; topicId: string; level: LevelId; returnTo?: CapstoneId }
+  | { kind: 'finished'; id: CapstoneId }
+  | { kind: 'loop'; topicId: string; level: LevelId; returnTo?: { kind: 'capstone' | 'finished'; id: CapstoneId } }
 
 export default function App() {
   const [status, setStatus] = useState<RuntimeStatus>('booting')
@@ -46,9 +49,10 @@ export default function App() {
 
   const topic = view.kind === 'loop' ? topicById(view.topicId) : null
   const level = view.kind === 'loop' && topic ? levelOf(topic, view.level) : null
-  const capstone = view.kind === 'capstone' ? capstoneById(view.id) : null
+  const capstone =
+    view.kind === 'capstone' || view.kind === 'finished' ? capstoneById(view.id) : null
   const returnTo = view.kind === 'loop' ? view.returnTo : undefined
-  const returnCapstone = returnTo ? capstoneById(returnTo) : null
+  const returnCapstone = returnTo ? capstoneById(returnTo.id) : null
 
   const mode: ShellMode =
     topic && level
@@ -78,9 +82,7 @@ export default function App() {
           onComplete={(outcome) =>
             setProgress((p) => completeLevel(p, topic.id, level.level, outcome))
           }
-          onExit={() =>
-            setView(returnTo ? { kind: 'capstone', id: returnTo } : { kind: 'map' })
-          }
+          onExit={() => setView(returnTo ?? { kind: 'map' })}
           onNextLevel={(next: Level) =>
             setView({ kind: 'loop', topicId: topic.id, level: next.level, returnTo })
           }
@@ -99,6 +101,21 @@ export default function App() {
           progress={progress}
           onOpen={(id) => setView({ kind: 'capstone', id })}
         />
+      ) : capstone && view.kind === 'finished' ? (
+        <FinishedBuild
+          key={capstone.id}
+          capstone={capstone}
+          runtime={runtime}
+          onBack={() => setView({ kind: 'capstone', id: capstone.id })}
+          onOpenTopic={(ref) =>
+            setView({
+              kind: 'loop',
+              topicId: ref.topicId,
+              level: ref.level,
+              returnTo: { kind: 'finished', id: capstone.id },
+            })
+          }
+        />
       ) : capstone ? (
         <CapstoneShell
           key={capstone.id}
@@ -111,9 +128,10 @@ export default function App() {
               kind: 'loop',
               topicId: ref.topicId,
               level: ref.level,
-              returnTo: capstone.id,
+              returnTo: { kind: 'capstone', id: capstone.id },
             })
           }
+          onReadFinished={() => setView({ kind: 'finished', id: capstone.id })}
         />
       ) : (
         <TopicMap

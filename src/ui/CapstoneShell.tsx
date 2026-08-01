@@ -1,14 +1,12 @@
 import { useState } from 'react'
 import type { Capstone, TopicRef } from '../content/capstones/types'
-import { topicById } from '../content/topics'
-import { levelName } from '../content/types'
 import type { CapstoneProgress } from '../progress/store'
 import type { Runtime } from '../engine/runtime'
 import { checkSubmission } from '../engine/check'
-import type { CheckResult, PyError } from '../engine/types'
-import { RunawayError } from '../engine/types'
+import type { CheckResult } from '../engine/types'
 import { Markdown } from './Markdown'
-import { payoffPlayers } from './payoff'
+import { TopicChips } from './TopicChips'
+import { usePayoffRunner } from './usePayoffRunner'
 
 export function CapstoneShell({
   capstone,
@@ -16,24 +14,28 @@ export function CapstoneShell({
   progress,
   onSave,
   onOpenTopic,
+  onReadFinished,
 }: {
   capstone: Capstone
   runtime: Runtime
   progress: CapstoneProgress | undefined
   onSave: (patch: Partial<CapstoneProgress>) => void
   onOpenTopic: (ref: TopicRef) => void
+  onReadFinished: () => void
 }) {
   const passed = progress?.passed ?? 0
   const [code, setCode] = useState(progress?.code ?? '')
   const [result, setResult] = useState<CheckResult | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [checking, setChecking] = useState(false)
   const [hintsShown, setHintsShown] = useState(0)
-  const [payoffValue, setPayoffValue] = useState<unknown>(null)
-  const [playError, setPlayError] = useState<PyError | null>(null)
   // First visit gets the pitch; afterwards it folds to a one-line toggle.
   const [whyOpen, setWhyOpen] = useState(() => (progress?.passed ?? 0) === 0)
 
-  const payoff = payoffPlayers[capstone.payoffKind]
+  const { busy: playing, payoffValue, playError, payoff, run: runPayoff } = usePayoffRunner(
+    capstone,
+    runtime,
+  )
+  const busy = checking || playing
   const complete = passed >= 4
   // The frontier stage: the first unpassed one. After completion there is no
   // frontier; Run replays the payoff.
@@ -43,48 +45,16 @@ export function CapstoneShell({
     onSave({ code, ...patch })
   }
 
-  async function runPayoff(source: string) {
-    setBusy(true)
-    setPlayError(null)
-    setPayoffValue(null)
-    try {
-      const col = await runtime.collect(source, capstone.harness, capstone.stdin ?? '')
-      if (col.error) {
-        setPlayError(col.error)
-        return
-      }
-      if (!payoff || !payoff.validate(col.value)) {
-        setPlayError({
-          type: 'Shape',
-          msg:
-            payoff?.badShapeMsg ??
-            'The program ran, but what it produced is not a shape this capstone can play.',
-          line: null,
-        })
-        return
-      }
-      setPayoffValue(col.value)
-    } catch (e) {
-      setPlayError(
-        e instanceof RunawayError
-          ? { type: 'Runaway', msg: "That ran forever — it never stopped on its own. Check your loop's exit condition.", line: null }
-          : { type: 'Error', msg: e instanceof Error ? e.message : String(e), line: null },
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
-
   async function submit() {
     if (complete) {
       persist({})
       await runPayoff(code)
       return
     }
-    setBusy(true)
+    setChecking(true)
     setResult(null)
     const r = await checkSubmission(runtime, code, stage!.check, capstone.stdin ?? '')
-    setBusy(false)
+    setChecking(false)
     setResult(r)
     if (r.passed) {
       const nowPassed = (passed + 1) as CapstoneProgress['passed']
@@ -131,6 +101,15 @@ export function CapstoneShell({
             Why this matters
           </button>
         )}
+        {/* The worked example, always open. Reading ≠ building — the
+            checkpoints only ever pass code written in the editor below. */}
+        <button
+          onClick={onReadFinished}
+          className="label lift mt-3 block rounded px-4 py-2 t-label"
+          style={{ border: '1px solid var(--rule)', color: 'var(--dim)' }}
+        >
+          Read the finished build →
+        </button>
       </div>
 
       {/* Checkpoint rail — same language as the loop's stage rail. */}
@@ -170,27 +149,7 @@ export function CapstoneShell({
 
           {/* The rungs this checkpoint stands on. Wobbling? Tap one, replay
               the lesson, and Done brings you straight back here. */}
-          {stage.topicRefs.length > 0 && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="label t-label" style={{ color: 'var(--rule)' }}>
-                stands on
-              </span>
-              {stage.topicRefs.map((ref) => {
-                const t = topicById(ref.topicId)
-                return t ? (
-                  <button
-                    key={`${ref.topicId}-${ref.level}`}
-                    onClick={() => onOpenTopic(ref)}
-                    title="Replay this rung — you'll land back here after"
-                    className="label lift rounded px-2.5 py-1 t-label"
-                    style={{ border: '1px solid var(--rule)', color: 'var(--dim)' }}
-                  >
-                    {t.title} · {levelName(ref.level)}
-                  </button>
-                ) : null
-              })}
-            </div>
-          )}
+          <TopicChips refs={stage.topicRefs} onOpenTopic={onOpenTopic} />
         </div>
       )}
 

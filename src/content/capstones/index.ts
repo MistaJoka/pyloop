@@ -11,6 +11,13 @@ export const capstones: Capstone[] = [life, wrangle, cipher, markov, ledger]
 
 export const capstoneById = (id: CapstoneId) => capstones.find((c) => c.id === id)
 
+/** The finished program a walkthrough describes: its non-aside sections,
+ *  joined in order. The reading view's Run button runs exactly this, and
+ *  verify-content proves it passes every stage check and the payoff — one
+ *  definition, so the two can never drift. */
+export const walkthroughProgram = (c: Capstone) =>
+  c.walkthrough.filter((s) => !s.aside).map((s) => s.code).join('\n\n')
+
 /** Every topic at least one stage of these capstones stands on — what the
  *  catalog's coverage line and verify-content's coverage gate both read. */
 export function coveredTopicIds(cs: Capstone[]): Set<string> {

@@ -2,7 +2,7 @@ import { loadPyodide } from 'pyodide'
 import { readFileSync } from 'node:fs'
 
 const PROJ = new URL('..', import.meta.url).pathname
-const { topics, capstones, payoffValidators } = await import(process.env.CONTENT ?? '/tmp/pyloop-content.mjs')
+const { topics, capstones, payoffValidators, walkthroughProgram } = await import(process.env.CONTENT ?? '/tmp/pyloop-content.mjs')
 
 const py = await loadPyodide()
 py.runPython(readFileSync(`${PROJ}/src/engine/tracer.py`, 'utf8'))
@@ -177,6 +177,57 @@ for (const c of capstones) {
     const st = JSON.parse(runPlain(s.code, stdin))
     if (st.error) bad(`${c.id} stretch ${n + 1}: code errored — ${st.error.type}: ${st.error.msg}`)
     else ok(`${c.id} stretch ${n + 1}: code runs`)
+  }
+
+  // 7. The walkthrough IS a working build — the reading view's honesty gate.
+  //    What the learner reads, joined, must pass every checkpoint and play
+  //    the payoff, because the Run button runs exactly that joined code.
+  if (!Array.isArray(c.walkthrough) || c.walkthrough.length < 2)
+    bad(`${c.id}: walkthrough needs at least a program section and the harness aside`)
+  else {
+    for (const [n, s] of c.walkthrough.entries()) {
+      if (!s.title?.trim() || !s.body?.trim() || !s.code?.trim())
+        bad(`${c.id} walkthrough §${n + 1}: title, body and code are all required`)
+      const secLines = (s.code ?? '').split('\n')
+      for (const k of Object.keys(s.notes ?? {})) {
+        const ln = Number(k)
+        if (!Number.isInteger(ln) || ln < 1 || ln > secLines.length)
+          bad(`${c.id} walkthrough §${n + 1}: note on line ${k} — no such line (section has ${secLines.length})`)
+        else if (!secLines[ln - 1].trim())
+          bad(`${c.id} walkthrough §${n + 1}: note on line ${k} points at a blank line`)
+      }
+      for (const ref of s.topicRefs ?? []) {
+        const t = topics.find((x) => x.id === ref.topicId)
+        if (!t) bad(`${c.id} walkthrough §${n + 1}: topicRef points at unknown topic "${ref.topicId}"`)
+        else if (!t.levels.some((l) => l.level === ref.level))
+          bad(`${c.id} walkthrough §${n + 1}: topicRef ${ref.topicId} · ${ref.level} — no such level`)
+      }
+    }
+    if (!c.walkthrough.some((s) => !s.aside)) bad(`${c.id}: every walkthrough section is an aside — no program left`)
+
+    const joined = walkthroughProgram(c)
+    let wOk = true
+    for (const st of c.stages) {
+      const r = JSON.parse(runAsserts(joined, st.check.code, stdin))
+      if (!r.passed) {
+        bad(`${c.id} walkthrough: joined sections fail stage ${st.id}'s check — ${JSON.stringify(r.error)}`)
+        wOk = false
+      }
+    }
+    const wcol = JSON.parse(runCollect(joined, c.harness, stdin))
+    if (wcol.error) {
+      bad(`${c.id} walkthrough: joined sections fail to collect — ${JSON.stringify(wcol.error)}`)
+      wOk = false
+    } else if (validate && !validate(wcol.value)) {
+      bad(`${c.id} walkthrough: joined sections' payoff rejected by the ${c.payoffKind} validator`)
+      wOk = false
+    }
+    const wpa = JSON.parse(runAsserts(joined, c.harness + '\n' + c.payoffAsserts, stdin))
+    if (!wpa.passed) {
+      bad(`${c.id} walkthrough: joined sections fail payoffAsserts — ${JSON.stringify(wpa.error)}`)
+      wOk = false
+    }
+    if (wOk) ok(`${c.id}: walkthrough (${c.walkthrough.length} sections) is a working build — all checks + payoff`)
   }
 }
 
